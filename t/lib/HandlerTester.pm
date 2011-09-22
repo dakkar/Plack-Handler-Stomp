@@ -1,6 +1,5 @@
 package HandlerTester;
-use Test::Routine;
-use MyTesting;
+use Moose::Role;
 use Moose::Util::TypeConstraints 'class_type';
 use MooseX::Types::Moose qw(ArrayRef HashRef Maybe);
 
@@ -41,12 +40,19 @@ has frames_sent => (
 has frames_to_receive => (
     is => 'rw',
     isa => ArrayRef[class_type('Net::Stomp::Frame')],
-    default => sub { [ ] },
+    default => sub { [ Net::Stomp::Frame->new({
+        command => 'ERROR',
+        headers => {
+            message => 'placeholder from ' . __PACKAGE__,
+        },
+        body => '',
+    }) ] },
     traits => ['Array'],
     handles => {
         queue_frame_to_receive => 'push',
         next_frame_to_receive => 'shift',
         frames_left_to_receive => 'count',
+        clear_frames_to_receive => 'clear',
     },
 );
 

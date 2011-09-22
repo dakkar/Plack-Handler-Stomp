@@ -6,7 +6,7 @@ use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
 use Moose::Util::TypeConstraints 'class_type';
 use MooseX::Types::Structured qw(Dict Optional Map);
 use namespace::autoclean;
-use Encode;
+use Try::Tiny;
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
 
@@ -92,8 +92,43 @@ sub run {
     $self->_connect();
     $self->_subscribe();
     while (1) {
+        my $frame = $self->connection->receive_frame();
+        $self->handle_stomp_frame($app, $frame);
+
         last if $self->one_shot;
     }
+}
+
+sub handle_stomp_frame {
+    my ($self, $app, $frame) = @_;
+
+    my $command = $frame->command();
+    if ($command eq 'MESSAGE') {
+        $self->handle_stomp_message($app, $frame);
+    }
+    elsif ($command eq 'ERROR') {
+        $self->handle_stomp_error($app, $frame);
+    }
+    else {
+        # XXX logging
+    }
+}
+
+sub handle_stomp_error {
+    my ($self, $app, $frame) = @_;
+
+    my $error = $frame->headers->{message};
+    warn $error; # XXX logging
+}
+
+sub handle_stomp_message {
+    my ($self, $app, $frame) = @_;
+
+    my $env = $self->_build_psgi_env($frame);
+    my $response;
+    try {
+        $response = $app->($env);
+    };
 }
 
 sub _connect {
@@ -130,6 +165,58 @@ sub _subscribe {
             ack => 'client',
         });
     }
+}
+
+sub _build_psgi_env {
+    my ($self, $frame) = @_;
+
+    my $destination = '/somewhere'; # XXX subscriptions & destinations etc
+
+    my $env = {
+        # server
+        SERVER_NAME => 'localhost',
+        SERVER_PORT => 0,
+        SERVER_PROTOCOL => 'STOMP',
+
+        # client
+        REQUEST_METHOD => 'POST',
+        REQUEST_URI => "stomp://localhost$destination",
+        SCRIPT_NAME => '',
+        PATH_INFO => $destination,
+        QUERY_STRING => '',
+
+        # broker
+        REMOTE_ADDR => $self->current_server->{hostname},
+
+        # http
+        HTTP_USER_AGENT => 'Net::Stomp',
+
+        # psgi
+        'psgi.version' => [1,0],
+        'psgi.url_scheme' => 'http',
+        'psgi.multithread' => 0,
+        'psgi.multiprocess' => 0,
+        'psgi.run_once' => 0,
+        'psgi.nonblocking' => 0,
+        'psgi.streaming' => 0,
+        'psgi.input' => do {
+            open my $input, '<', \($frame->body);
+            $input;
+        },
+        'psgi.errors' => do {
+            my $foo;
+            open my $errors, '>', \$foo; # XXX logging
+            $errors;
+        },
+    };
+
+    if ($frame->headers) {
+        for my $header (keys %{$frame->headers}) {
+            $env->{"stomp.$header"} = $frame->headers->{$header};
+        }
+    }
+
+    return $env;
 }
 
 1;
