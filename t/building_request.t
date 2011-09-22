@@ -15,6 +15,7 @@ test 'a simple request' => sub {
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing',
+            'message-id' => 123,
         },
         body => 'foo',
     }));
@@ -51,6 +52,7 @@ test 'a simple request' => sub {
 
         # stomp
         'stomp.destination' => '/queue/testing',
+        'stomp.message-id' => 123,
 
         # application
         'testapp.body' => 'foo',
@@ -60,6 +62,13 @@ test 'a simple request' => sub {
     is_deeply($self->requests_received->[0],
               \%expected,
               'with expected content');
+
+    is($self->sent_frames_count,1,'sent one frame');
+    my $frame = $self->frames_sent->[0];
+    is($frame->command,'ACK',q{it's an ack});
+    is_deeply($frame->headers,
+              { 'message-id' => 123 },
+              'for the right message');
 };
 
 run_me;

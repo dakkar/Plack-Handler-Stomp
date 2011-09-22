@@ -132,10 +132,8 @@ sub handle_stomp_message {
     my ($self, $app, $frame) = @_;
 
     my $env = $self->_build_psgi_env($frame);
-    my $response;
-    try {
-        $response = $app->($env);
-    };
+    my $response = $app->($env);
+    $self->connection->ack({ frame => $frame });
 }
 
 sub _connect {
