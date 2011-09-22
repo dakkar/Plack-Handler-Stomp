@@ -5,6 +5,15 @@ sub _get_connection {
     return 1;
 }
 
+sub new {
+    my $self = shift;
+    my $callbacks = shift;
+    $callbacks->{new}->(@_);
+    my $self = $self->SUPER::new(@_);
+    $self->{__fakestomp__callbacks} = $callbacks;
+    return $self;
+}
+
 sub connect {
     my ( $self, $conf ) = @_;
 
