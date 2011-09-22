@@ -1,4 +1,6 @@
 package FakeStomp;
+use strict;
+use warnings;
 use parent 'Net::Stomp';
 
 sub _get_connection {
@@ -6,10 +8,10 @@ sub _get_connection {
 }
 
 sub new {
-    my $self = shift;
+    my $class = shift;
     my $callbacks = shift;
     $callbacks->{new}->(@_);
-    my $self = $self->SUPER::new(@_);
+    my $self = $class->SUPER::new(@_);
     $self->{__fakestomp__callbacks} = $callbacks;
     return $self;
 }
