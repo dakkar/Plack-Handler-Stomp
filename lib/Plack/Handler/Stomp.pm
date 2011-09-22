@@ -1,11 +1,10 @@
 package Plack::Handler::Stomp;
 use Moose;
-use List::MoreUtils qw/ uniq /;
 use HTTP::Request;
 use Net::Stomp;
-use MooseX::Types::Moose qw/Bool Str Int ArrayRef HashRef CodeRef/;
+use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
 use Moose::Util::TypeConstraints 'class_type';
-use MooseX::Types::Structured qw(Dict Optional);
+use MooseX::Types::Structured qw(Dict Optional Map);
 use namespace::autoclean;
 use Encode;
 
@@ -28,6 +27,7 @@ has servers => (
         hostname => Str,
         port => Int,
         connect_headers => Optional[HashRef],
+        subscribe_headers => Optional[HashRef],
     ]],
     lazy => 1,
     builder => '_default_servers',
@@ -47,14 +47,38 @@ sub next_server {
     $self->_push_servers($ret);
     return $ret;
 }
+sub current_server {
+    my ($self) = @_;
+
+    return $self->servers->[-1];
+}
 
 has connect_headers => (
     is => 'ro',
-    isa => HashRef,
+    isa => Map[Str,Value],
     lazy => 1,
     builder => '_default_connect_headers',
 );
 sub _default_connect_headers { { } }
+
+has subscribe_headers => (
+    is => 'ro',
+    isa => Map[Str,Value],
+    lazy => 1,
+    builder => '_default_subscribe_headers',
+);
+sub _default_subscribe_headers { { } }
+
+has subscriptions => (
+    is => 'ro',
+    isa => ArrayRef[Dict[
+        destination => Str,
+        headers => Optional[Map[Str,Value]],
+    ]],
+    lazy => 1,
+    builder => '_default_subscriptions',
+);
+sub _default_subscriptions { [] }
 
 has one_shot => (
     is => 'rw',
@@ -66,6 +90,7 @@ sub run {
     my ($self, $app) = @_;
 
     $self->_connect();
+    $self->_subscribe();
     while (1) {
         last if $self->one_shot;
     }
@@ -86,6 +111,25 @@ sub _connect {
         %{$server->{connect_headers} || {}},
     );
     $self->connection->connect(\%headers);
+}
+
+sub _subscribe {
+    my ($self) = @_;
+
+    my %headers = (
+        %{$self->subscribe_headers},
+        %{$self->current_server->{subscribe_headers} || {}},
+    );
+    for my $sub (@{$self->subscriptions}) {
+        my $destination = $sub->{destination};
+        my $more_headers = $sub->{headers} || {};
+        $self->connection->subscribe({
+            destination => $destination,
+            %headers,
+            %$more_headers,
+            ack => 'client',
+        });
+    }
 }
 
 1;
