@@ -48,6 +48,14 @@ sub next_server {
     return $ret;
 }
 
+has connect_headers => (
+    is => 'ro',
+    isa => HashRef,
+    lazy => 1,
+    builder => '_default_connect_headers',
+);
+sub _default_connect_headers { { } }
+
 has one_shot => (
     is => 'rw',
     isa => Bool,
@@ -73,7 +81,11 @@ sub _connect {
         port => $server->{port},
     }));
 
-    $self->connection->connect($server->{connect_headers});
+    my %headers = (
+        %{$self->connect_headers},
+        %{$server->{connect_headers} || {}},
+    );
+    $self->connection->connect(\%headers);
 }
 
 1;

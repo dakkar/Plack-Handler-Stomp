@@ -28,7 +28,7 @@ test 'connecting with defaults' => sub {
 
     is($self->connection_calls_count,1,'connected once');
     $call = $self->connection_calls->[0];
-    ok(!defined $call,'no connection headers');
+    is_deeply($call,{},'no connection headers');
 };
 
 run_me;
