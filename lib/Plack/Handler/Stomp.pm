@@ -3,8 +3,9 @@ use Moose;
 use List::MoreUtils qw/ uniq /;
 use HTTP::Request;
 use Net::Stomp;
-use MooseX::Types::Moose qw/Bool Str Int HashRef CodeRef/;
+use MooseX::Types::Moose qw/Bool Str Int ArrayRef HashRef CodeRef/;
 use Moose::Util::TypeConstraints 'class_type';
+use MooseX::Types::Structured qw(Dict Optional);
 use namespace::autoclean;
 use Encode;
 
@@ -20,6 +21,32 @@ has connection_builder => (
     isa => CodeRef,
     default => sub { sub { Net::Stomp->new($_[0]) } },
 );
+
+has servers => (
+    is => 'ro',
+    isa => ArrayRef[Dict[
+        hostname => Str,
+        port => Int,
+        connect_headers => Optional[HashRef],
+    ]],
+    lazy => 1,
+    builder => '_default_servers',
+    traits => ['Array'],
+    handles => {
+        _shift_servers => 'shift',
+        _push_servers => 'push',
+    },
+);
+sub _default_servers {
+    [ { hostname => 'localhost', port => 61613 } ]
+};
+sub next_server {
+    my ($self) = @_;
+
+    my $ret = $self->_shift_servers;
+    $self->_push_servers($ret);
+    return $ret;
+}
 
 has one_shot => (
     is => 'rw',
@@ -39,11 +66,14 @@ sub run {
 sub _connect {
     my ($self) = @_;
 
+    my $server = $self->next_server;
+
     $self->connection($self->connection_builder->({
-        hostname => 'localhost',
-        port => 61613,
+        hostname => $server->{hostname},
+        port => $server->{port},
     }));
-    $self->connection->connect();
+
+    $self->connection->connect($server->{connect_headers});
 }
 
 1;

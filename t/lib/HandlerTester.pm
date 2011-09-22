@@ -23,6 +23,7 @@ has handler_args => (
 has handler => (
     is => 'ro',
     isa => class_type('Plack::Handler::Stomp'),
+    lazy => 1,
     builder => 'setup_handler',
 );
 
