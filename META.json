@@ -1,0 +1,60 @@
+{
+   "abstract" : "Plack handler for the STOMP protocol",
+   "author" : [
+      "Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 4.200012, CPAN::Meta::Converter version 2.110930",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Plack-Handler-Stomp",
+   "no_index" : {
+      "directory" : [
+         "t/lib"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.30"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "HTTP::Request" : 0,
+            "Moose" : 0,
+            "Moose::Util::TypeConstraints" : 0,
+            "MooseX::Types::Moose" : 0,
+            "MooseX::Types::Structured" : 0,
+            "Net::Stomp" : 0,
+            "Try::Tiny" : 0,
+            "namespace::autoclean" : 0
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Moose::Role" : 0,
+            "Net::Stomp::Frame" : 0,
+            "Test::More" : 0,
+            "Test::Routine" : 0,
+            "Test::Routine::Util" : 0,
+            "parent" : 0
+         }
+      }
+   },
+   "release_status" : "testing",
+   "resources" : {
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/dakkar/plack-handler-stomp.git",
+         "web" : "https://github.com/dakkar/plack-handler-stomp"
+      }
+   },
+   "version" : "0.001_01"
+}
+

@@ -1,4 +1,10 @@
 package Plack::Handler::Stomp;
+BEGIN {
+  $Plack::Handler::Stomp::VERSION = '0.001_01';
+}
+BEGIN {
+  $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
+}
 use Moose;
 use HTTP::Request;
 use Net::Stomp;
@@ -241,3 +247,28 @@ sub _build_psgi_env {
 }
 
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+Plack::Handler::Stomp - adapt STOMP to (almost) HTTP, via Plack
+
+=head1 VERSION
+
+version 0.001_01
+
+=head1 AUTHOR
+
+Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Net-a-porter.com.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+
