@@ -29,9 +29,9 @@ test 'a simple request' => sub {
 
         # client
         REQUEST_METHOD => 'POST',
-        REQUEST_URI => 'stomp://localhost/somewhere',
+        REQUEST_URI => 'stomp://localhost/queue/testing',
         SCRIPT_NAME => '',
-        PATH_INFO => '/somewhere',
+        PATH_INFO => '/queue/testing',
         QUERY_STRING => '',
 
         # broker

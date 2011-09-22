@@ -6,10 +6,6 @@ use MyTesting;
 use Net::Stomp::Frame;
 with 'HandlerTester';
 
-sub by_dest {
-    $a->{destination} cmp $b->{destination};
-}
-
 test 'subscriptions with headers' => sub {
     my ($self) = @_;
 
@@ -42,6 +38,7 @@ test 'subscriptions with headers' => sub {
             foo => 'bar',
             from => 'server',
             ack => 'client',
+            id => 0,
         },
         {
             destination => '/topic/bar',
@@ -50,13 +47,13 @@ test 'subscriptions with headers' => sub {
             some => 'more',
             from => 'destination',
             ack => 'client',
+            id => 1,
         },
     );
 
     $self->handler->run();
 
-    my @calls = sort by_dest @{$self->subscription_calls};
-    is_deeply(\@calls,
+    is_deeply($self->subscription_calls,
               \@expected,
               'subscribed correctly');
 };

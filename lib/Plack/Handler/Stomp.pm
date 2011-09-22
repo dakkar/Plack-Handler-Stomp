@@ -73,12 +73,19 @@ has subscriptions => (
     is => 'ro',
     isa => ArrayRef[Dict[
         destination => Str,
+        path_info => Optional[Str],
         headers => Optional[Map[Str,Value]],
     ]],
     lazy => 1,
     builder => '_default_subscriptions',
 );
 sub _default_subscriptions { [] }
+
+has destination_path_map => (
+    is => 'ro',
+    isa => Map[Str,Str],
+    default => sub { { } },
+);
 
 has one_shot => (
     is => 'rw',
@@ -155,6 +162,9 @@ sub _subscribe {
         %{$self->subscribe_headers},
         %{$self->current_server->{subscribe_headers} || {}},
     );
+
+    my $sub_id = 0;
+
     for my $sub (@{$self->subscriptions}) {
         my $destination = $sub->{destination};
         my $more_headers = $sub->{headers} || {};
@@ -162,15 +172,28 @@ sub _subscribe {
             destination => $destination,
             %headers,
             %$more_headers,
+            id => $sub_id,
             ack => 'client',
         });
+
+        $self->destination_path_map->{$destination} =
+        $self->destination_path_map->{"/subscription/$sub_id"} =
+            $sub->{path_info} || $destination;
+
+        ++$sub_id;
     }
 }
 
 sub _build_psgi_env {
     my ($self, $frame) = @_;
 
-    my $destination = '/somewhere'; # XXX subscriptions & destinations etc
+    my $destination = $frame->headers->{destination};
+    my $sub_id = $frame->headers->{subscription};
+
+    my $path_info;
+    if ($sub_id) { $path_info = $self->destination_path_map->{"/subscription/$sub_id"} };
+    $path_info ||= $self->destination_path_map->{$destination};
+    $path_info ||= $destination; # should not really be needed
 
     my $env = {
         # server
@@ -180,9 +203,9 @@ sub _build_psgi_env {
 
         # client
         REQUEST_METHOD => 'POST',
-        REQUEST_URI => "stomp://localhost$destination",
+        REQUEST_URI => "stomp://localhost$path_info",
         SCRIPT_NAME => '',
-        PATH_INFO => $destination,
+        PATH_INFO => $path_info,
         QUERY_STRING => '',
 
         # broker
