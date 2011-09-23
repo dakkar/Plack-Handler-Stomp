@@ -9,6 +9,7 @@ use Plack::Handler::Stomp::Types qw(NetStompish
                                     Headers
                                     PathMap
                                );
+use Plack::Handler::Stomp::Exceptions;
 use namespace::autoclean;
 use Try::Tiny;
 
@@ -17,6 +18,7 @@ use Try::Tiny;
 has connection => (
     is => 'rw',
     isa => NetStompish,
+    lazy_build => 1,
 );
 
 has connection_builder => (
@@ -107,14 +109,14 @@ sub handle_stomp_frame {
     my ($self, $app, $frame) = @_;
 
     my $command = $frame->command();
-    if ($command eq 'MESSAGE') {
-        $self->handle_stomp_message($app, $frame);
-    }
-    elsif ($command eq 'ERROR') {
-        $self->handle_stomp_error($app, $frame);
+    my $method = $self->can("handle_stomp_\L$command");
+    if ($method) {
+        $self->$method($app, $frame);
     }
     else {
-        # XXX logging
+        Plack::Handler::Stomp::Exceptions::UnknownFrame->throw(
+            {frame=>$frame}
+        );
     }
 }
 
@@ -129,25 +131,51 @@ sub handle_stomp_message {
     my ($self, $app, $frame) = @_;
 
     my $env = $self->_build_psgi_env($frame);
-    my $response = $app->($env);
-    $self->connection->ack({ frame => $frame });
+    try {
+        my $response = $app->($env);
+        $self->connection->ack({ frame => $frame });
+    } catch {
+        Plack::Handler::Stomp::Exceptions::AppError->throw({
+            app_error => $_
+        });
+    };
+}
+
+sub handle_stomp_receipt {
+    my ($self, $app, $frame) = @_;
+
+    # XXX ignored, logging
+}
+
+sub _build_connection {
+    my ($self) = @_;
+
+    my $server = $self->next_server;
+
+    return $self->connection_builder->({
+        hostname => $server->{hostname},
+        port => $server->{port},
+    });
 }
 
 sub _connect {
     my ($self) = @_;
 
-    my $server = $self->next_server;
-
-    $self->connection($self->connection_builder->({
-        hostname => $server->{hostname},
-        port => $server->{port},
-    }));
-
-    my %headers = (
-        %{$self->connect_headers},
-        %{$server->{connect_headers} || {}},
-    );
-    $self->connection->connect(\%headers);
+    try {
+        # the connection will be created by the lazy builder
+        $self->connection; # needed to make sure that 'current_server'
+                           # is the right one
+        my $server = $self->current_server;
+        my %headers = (
+            %{$self->connect_headers},
+            %{$server->{connect_headers} || {}},
+        );
+        $self->connection->connect(\%headers);
+    } catch {
+        Plack::Handler::Stomp::Exceptions::Stomp->throw({
+            stomp_error => $_
+        });
+    };
 }
 
 sub _subscribe {
@@ -160,23 +188,29 @@ sub _subscribe {
 
     my $sub_id = 0;
 
-    for my $sub (@{$self->subscriptions}) {
-        my $destination = $sub->{destination};
-        my $more_headers = $sub->{headers} || {};
-        $self->connection->subscribe({
-            destination => $destination,
-            %headers,
-            %$more_headers,
-            id => $sub_id,
-            ack => 'client',
+    try {
+        for my $sub (@{$self->subscriptions}) {
+            my $destination = $sub->{destination};
+            my $more_headers = $sub->{headers} || {};
+            $self->connection->subscribe({
+                destination => $destination,
+                %headers,
+                %$more_headers,
+                id => $sub_id,
+                ack => 'client',
+            });
+
+            $self->destination_path_map->{$destination} =
+                $self->destination_path_map->{"/subscription/$sub_id"} =
+                    $sub->{path_info} || $destination;
+
+            ++$sub_id;
+        }
+    } catch {
+        Plack::Handler::Stomp::Exceptions::Stomp->throw({
+            stomp_error => $_
         });
-
-        $self->destination_path_map->{$destination} =
-        $self->destination_path_map->{"/subscription/$sub_id"} =
-            $sub->{path_info} || $destination;
-
-        ++$sub_id;
-    }
+    };
 }
 
 sub _build_psgi_env {

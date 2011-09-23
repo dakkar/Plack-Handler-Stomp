@@ -34,6 +34,7 @@ has frames_sent => (
     handles => {
         queue_sent_frame => 'push',
         sent_frames_count => 'count',
+        clear_sent_frames => 'clear',
     }
 );
 
@@ -64,6 +65,7 @@ has constructor_calls => (
     handles => {
         queue_constructor_call => 'push',
         constructor_calls_count => 'count',
+        clear_constructor_calls => 'clear',
     },
 );
 
@@ -75,6 +77,7 @@ has connection_calls => (
     handles => {
         queue_connection_call => 'push',
         connection_calls_count => 'count',
+        clear_connection_calls => 'clear',
     },
 );
 
@@ -86,6 +89,7 @@ has disconnection_calls => (
     handles => {
         queue_disconnection_call => 'push',
         disconnection_calls_count => 'count',
+        clear_disconnection_calls => 'clear',
     },
 );
 
@@ -97,6 +101,7 @@ has subscription_calls => (
     handles => {
         queue_subscription_call => 'push',
         subscription_calls_count => 'count',
+        clear_subscription_calls => 'clear',
     },
 );
 
@@ -108,6 +113,7 @@ has unsubscription_calls => (
     handles => {
         queue_unsubscription_call => 'push',
         unsubscription_calls_count => 'count',
+        clear_unsubscription_calls => 'clear',
     },
 );
 
@@ -129,6 +135,18 @@ sub setup_handler {
             },$params);
         },
     })
+}
+
+sub clear_calls_and_queues {
+    my ($self) = @_;
+    $self->clear_sent_frames;
+    $self->clear_frames_to_receive;
+    $self->clear_constructor_calls;
+    $self->clear_connection_calls;
+    $self->clear_disconnection_calls;
+    $self->clear_subscription_calls;
+    $self->clear_unsubscription_calls;
+    return;
 }
 
 1;

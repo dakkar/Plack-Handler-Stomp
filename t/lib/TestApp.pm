@@ -26,6 +26,11 @@ sub psgi_test_app {
         delete $env->{'psgi.errors'};
 
         $self->add_request($env);
+
+        if ($body eq 'die now') {
+            die "I died\n";
+        }
+
         return [ 200, [], ['response'] ];
     };
 }

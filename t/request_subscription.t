@@ -4,7 +4,6 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-use TestApp;
 with 'HandlerTester','TestApp';
 
 test 'a simple request' => sub {
