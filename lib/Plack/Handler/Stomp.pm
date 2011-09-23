@@ -9,6 +9,7 @@ use Plack::Handler::Stomp::Types qw(NetStompish
                                     Headers
                                     PathMap
                                );
+use Plack::Handler::Stomp::PathInfoMunger 'munge_path_info';
 use MooseX::Types::Common::Numeric qw(PositiveInt);
 use Plack::Handler::Stomp::Exceptions;
 use namespace::autoclean;
@@ -265,6 +266,13 @@ sub _build_psgi_env {
         $path_info = $self->destination_path_map->{"/subscription/$sub_id"}
     };
     $path_info ||= $self->destination_path_map->{$destination};
+    if ($path_info) {
+        $path_info = munge_path_info(
+            $path_info,
+            $self->current_server,
+            $frame,
+        );
+    }
     $path_info ||= $destination; # should not really be needed
 
     my $env = {

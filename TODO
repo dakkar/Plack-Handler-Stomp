@@ -1,6 +1,5 @@
 - stomp replies
 - delegated logging
-- path_info with printf-style substitutions
 - tests against real broker
 
 Then:
