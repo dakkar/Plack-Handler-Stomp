@@ -38,4 +38,8 @@ package Plack::Handler::Stomp::Exceptions;
  );
 }
 
+{package Plack::Handler::Stomp::Exceptions::OneShot;
+ use Moose;with 'Throwable';
+}
+
 1;

@@ -9,6 +9,7 @@ use Plack::Handler::Stomp::Types qw(NetStompish
                                     Headers
                                     PathMap
                                );
+use MooseX::Types::Common::Numeric qw(PositiveInt);
 use Plack::Handler::Stomp::Exceptions;
 use namespace::autoclean;
 use Try::Tiny;
@@ -55,6 +56,17 @@ sub current_server {
     return $self->servers->[-1];
 }
 
+has tries_per_server => (
+    is => 'ro',
+    isa => PositiveInt,
+    default => 1,
+);
+has connect_retry_delay => (
+    is => 'ro',
+    isa => PositiveInt,
+    default => 15,
+);
+
 has connect_headers => (
     is => 'ro',
     isa => Headers,
@@ -95,13 +107,42 @@ has one_shot => (
 sub run {
     my ($self, $app) = @_;
 
-    $self->_connect();
-    $self->_subscribe();
+    SERVER_LOOP:
     while (1) {
-        my $frame = $self->connection->receive_frame();
-        $self->handle_stomp_frame($app, $frame);
+        my $exception;
+        try {
+            $self->_connect();
+            $self->_subscribe();
 
-        last if $self->one_shot;
+            FRAME_LOOP:
+            while (1) {
+                my $frame = $self->connection->receive_frame();
+                $self->handle_stomp_frame($app, $frame);
+
+                Plack::Handler::Stomp::Exceptions::OneShot->throw()
+                      if $self->one_shot;
+            }
+        } catch {
+            $exception = $_;
+        };
+        if ($exception) {
+            if (!blessed $exception) {
+                die "unhandled exception $exception";
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::AppError')) {
+                die $exception;
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::Stomp')) {
+                $self->clear_connection;
+                next SERVER_LOOP;
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::OneShot')) {
+                last SERVER_LOOP;
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::UnknownFrame')) {
+                die $exception;
+            }
+        }
     }
 }
 

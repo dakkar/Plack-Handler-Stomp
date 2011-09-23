@@ -1,5 +1,3 @@
-- multiple servers, looping between them
-- tests for failure modes
 - stomp replies
 - delegated logging
 - path_info with printf-style substitutions
