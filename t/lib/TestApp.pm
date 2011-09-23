@@ -31,6 +31,15 @@ sub psgi_test_app {
             die "I died\n";
         }
 
+        if ($body eq 'please reply') {
+            return [ 200, [
+                'X-STOMP-foo' => 'something',
+                'X-STOMP-Reply-Address' => 'reply_queue',
+            ], [
+                'hello',
+            ] ];
+        }
+
         return [ 200, [], ['response'] ];
     };
 }

@@ -14,6 +14,7 @@ use MooseX::Types::Common::Numeric qw(PositiveInt);
 use Plack::Handler::Stomp::Exceptions;
 use namespace::autoclean;
 use Try::Tiny;
+use Plack::Util;
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
 
@@ -175,6 +176,9 @@ sub handle_stomp_message {
     my $env = $self->_build_psgi_env($frame);
     try {
         my $response = $app->($env);
+
+        $self->maybe_send_reply($response);
+
         $self->connection->ack({ frame => $frame });
     } catch {
         Plack::Handler::Stomp::Exceptions::AppError->throw({
@@ -187,6 +191,53 @@ sub handle_stomp_receipt {
     my ($self, $app, $frame) = @_;
 
     # XXX ignored, logging
+}
+
+sub maybe_send_reply {
+    my ($self, $response) = @_;
+
+    my $reply_to = $self->where_should_send_reply($response);
+    if ($reply_to) {
+        $self->send_reply($response,$reply_to);
+    }
+
+    return;
+}
+
+sub where_should_send_reply {
+    my ($self, $response) = @_;
+
+    return Plack::Util::header_get($response->[1],
+                                   'X-STOMP-Reply-Address');
+}
+
+sub send_reply {
+    my ($self, $response, $reply_address) = @_;
+
+    my $reply_queue = '/remote-temp-queue/' . $reply_address;
+
+    my $content = '';
+    unless (Plack::Util::status_with_no_entity_body($response->[0])) {
+        Plack::Util::foreach($response->[2],
+                             sub{$content.=shift});
+    }
+
+    my %reply_hh = ();
+    while (my ($k,$v) = splice @{$response->[1]},0,2) {
+        $k=lc($k);
+        next if $k eq 'x-stomp-reply-address';
+        next unless $k =~ s{^x-stomp-}{};
+
+        $reply_hh{lc($k)} = $v;
+    }
+
+    $self->connection->send({
+        %reply_hh,
+        destination => $reply_queue,
+        body => $content
+    });
+
+    return;
 }
 
 sub _build_connection {
