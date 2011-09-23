@@ -117,10 +117,22 @@ has unsubscription_calls => (
     },
 );
 
+has log_messages => (
+    is => 'rw',
+    isa => ArrayRef,
+    traits => ['Array'],
+    handles => {
+        add_log_message => 'push',
+        log_messages_count => 'count',
+        clear_log_messages => 'clear',
+    },
+);
+
 sub setup_handler {
     my ($self) = @_;
 
     return Plack::Handler::Stomp->new({
+        logger => $self,
         %{$self->handler_args},
         connection_builder => sub {
             my ($params) = @_;
@@ -137,6 +149,23 @@ sub setup_handler {
     })
 }
 
+sub log_debug {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['debug',@msg]);
+}
+sub log_info {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['info',@msg]);
+}
+sub log_warn {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['warn',@msg]);
+}
+sub log_error {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['error',@msg]);
+}
+
 sub clear_calls_and_queues {
     my ($self) = @_;
     $self->clear_sent_frames;
@@ -146,6 +175,7 @@ sub clear_calls_and_queues {
     $self->clear_disconnection_calls;
     $self->clear_subscription_calls;
     $self->clear_unsubscription_calls;
+    $self->clear_log_messages;
     return;
 }
 

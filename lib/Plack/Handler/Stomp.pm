@@ -3,7 +3,7 @@ use Moose;
 use HTTP::Request;
 use Net::Stomp;
 use MooseX::Types::Moose qw(Bool CodeRef);
-use Plack::Handler::Stomp::Types qw(NetStompish
+use Plack::Handler::Stomp::Types qw(NetStompish Logger
                                     ServerConfigList
                                     SubscriptionConfigList
                                     Headers
@@ -17,6 +17,16 @@ use Try::Tiny;
 use Plack::Util;
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
+
+has logger => (
+    is => 'rw',
+    isa => Logger,
+    lazy_build => 1,
+);
+sub _build_logger {
+    require Plack::Handler::Stomp::StupidLogger;
+    Plack::Handler::Stomp::StupidLogger->new();
+}
 
 has connection => (
     is => 'rw',
@@ -167,7 +177,7 @@ sub handle_stomp_error {
     my ($self, $app, $frame) = @_;
 
     my $error = $frame->headers->{message};
-    warn $error; # XXX logging
+    $self->logger->log_warn($error);
 }
 
 sub handle_stomp_message {
@@ -190,7 +200,8 @@ sub handle_stomp_message {
 sub handle_stomp_receipt {
     my ($self, $app, $frame) = @_;
 
-    # XXX ignored, logging
+    $self->logger->log_debug('ignored RECEIPT frame for '
+                                 .$frame->headers->{'receipt-id'});
 }
 
 sub maybe_send_reply {
@@ -357,11 +368,9 @@ sub _build_psgi_env {
             open my $input, '<', \($frame->body);
             $input;
         },
-        'psgi.errors' => do {
-            my $foo;
-            open my $errors, '>', \$foo; # XXX logging
-            $errors;
-        },
+        'psgi.errors' => Plack::Util::inline_object(
+            print => sub { $self->logger->log_error(@_) },
+        ),
     };
 
     if ($frame->headers) {

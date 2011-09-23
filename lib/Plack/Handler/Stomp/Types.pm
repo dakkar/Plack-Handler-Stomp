@@ -1,7 +1,7 @@
 package Plack::Handler::Stomp::Types;
 use MooseX::Types -declare =>
     [qw(
-           NetStompish
+           NetStompish Logger
            Hostname PortNumber
            ServerConfig ServerConfigList
            Headers
@@ -17,6 +17,9 @@ duck_type NetStompish, [qw(connect
                            subscribe unsubscribe
                            receive_frame ack
                            send)];
+
+duck_type Logger, [qw(log_debug log_info
+                      log_warn log_error)];
 
 subtype Hostname, as Str; # maybe too lax?
 subtype PortNumber, as Int,

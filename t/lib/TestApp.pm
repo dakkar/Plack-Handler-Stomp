@@ -23,6 +23,11 @@ sub psgi_test_app {
         my $body;
         (delete $env->{'psgi.input'})->read($body,1000000);
         $env->{'testapp.body'}=$body;
+
+        if ($body eq 'error please') {
+            $env->{'psgi.errors'}->print('your error');
+        }
+
         delete $env->{'psgi.errors'};
 
         $self->add_request($env);
