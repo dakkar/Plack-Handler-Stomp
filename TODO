@@ -1,12 +1,11 @@
-- multiple servers, looping between them
-- exception handling
 - types module, stricter validation, coercions
+- exception handling
+- multiple servers, looping between them
+- tests for failure modes
 - stomp replies
 - delegated logging
 - path_info with printf-style substitutions
 - tests against real broker
-- tests for sub_id-based path mapping
-- tests for failure modes
 
 Then:
 - Catalyst script to load destinations from config/controllers

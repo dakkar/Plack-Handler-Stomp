@@ -18,6 +18,14 @@ test 'a simple request' => sub {
         },
         body => 'foo',
     }));
+    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+        command => 'MESSAGE',
+        headers => {
+            destination => '/queue/testing-wrong-on-purpose',
+            subscription => '0',
+        },
+        body => 'foo',
+    }));
 
     $self->set_arg(
         subscriptions => [
@@ -30,8 +38,14 @@ test 'a simple request' => sub {
 
     $self->handler->run($self->psgi_test_app);
 
-    my $req = $self->requests_received->[0];
+    my $req = $self->requests_received->[-1];
     is($req->{'stomp.destination'},'/queue/testing','destination passed through');
+    is($req->{PATH_INFO},'/my/path','path mapped');
+
+    $self->handler->run($self->psgi_test_app);
+
+    $req = $self->requests_received->[-1];
+    is($req->{'stomp.destination'},'/queue/testing-wrong-on-purpose','destination passed through');
     is($req->{PATH_INFO},'/my/path','path mapped');
 };
 

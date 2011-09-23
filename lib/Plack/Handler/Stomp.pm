@@ -189,7 +189,9 @@ sub _build_psgi_env {
     my $sub_id = $frame->headers->{subscription};
 
     my $path_info;
-    if ($sub_id) { $path_info = $self->destination_path_map->{"/subscription/$sub_id"} };
+    if (defined $sub_id) {
+        $path_info = $self->destination_path_map->{"/subscription/$sub_id"}
+    };
     $path_info ||= $self->destination_path_map->{$destination};
     $path_info ||= $destination; # should not really be needed
 
