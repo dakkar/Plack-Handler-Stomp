@@ -2,9 +2,13 @@ package Plack::Handler::Stomp;
 use Moose;
 use HTTP::Request;
 use Net::Stomp;
-use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
-use Moose::Util::TypeConstraints 'class_type';
-use MooseX::Types::Structured qw(Dict Optional Map);
+use MooseX::Types::Moose qw(Bool CodeRef);
+use Plack::Handler::Stomp::Types qw(NetStompish
+                                    ServerConfigList
+                                    SubscriptionConfigList
+                                    Headers
+                                    PathMap
+                               );
 use namespace::autoclean;
 use Try::Tiny;
 
@@ -12,7 +16,7 @@ use Try::Tiny;
 
 has connection => (
     is => 'rw',
-    isa => class_type('Net::Stomp'),
+    isa => NetStompish,
 );
 
 has connection_builder => (
@@ -23,13 +27,9 @@ has connection_builder => (
 
 has servers => (
     is => 'ro',
-    isa => ArrayRef[Dict[
-        hostname => Str,
-        port => Int,
-        connect_headers => Optional[HashRef],
-        subscribe_headers => Optional[HashRef],
-    ]],
+    isa => ServerConfigList,
     lazy => 1,
+    coerce => 1,
     builder => '_default_servers',
     traits => ['Array'],
     handles => {
@@ -55,7 +55,7 @@ sub current_server {
 
 has connect_headers => (
     is => 'ro',
-    isa => Map[Str,Value],
+    isa => Headers,
     lazy => 1,
     builder => '_default_connect_headers',
 );
@@ -63,7 +63,7 @@ sub _default_connect_headers { { } }
 
 has subscribe_headers => (
     is => 'ro',
-    isa => Map[Str,Value],
+    isa => Headers,
     lazy => 1,
     builder => '_default_subscribe_headers',
 );
@@ -71,11 +71,8 @@ sub _default_subscribe_headers { { } }
 
 has subscriptions => (
     is => 'ro',
-    isa => ArrayRef[Dict[
-        destination => Str,
-        path_info => Optional[Str],
-        headers => Optional[Map[Str,Value]],
-    ]],
+    isa => SubscriptionConfigList,
+    coerce => 1,
     lazy => 1,
     builder => '_default_subscriptions',
 );
@@ -83,7 +80,7 @@ sub _default_subscriptions { [] }
 
 has destination_path_map => (
     is => 'ro',
-    isa => Map[Str,Str],
+    isa => PathMap,
     default => sub { { } },
 );
 
