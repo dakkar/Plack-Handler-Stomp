@@ -23,9 +23,28 @@ sub psgi_test_app {
         my $body;
         (delete $env->{'psgi.input'})->read($body,1000000);
         $env->{'testapp.body'}=$body;
+
+        if ($body eq 'error please') {
+            $env->{'psgi.errors'}->print('your error');
+        }
+
         delete $env->{'psgi.errors'};
 
         $self->add_request($env);
+
+        if ($body eq 'die now') {
+            die "I died\n";
+        }
+
+        if ($body eq 'please reply') {
+            return [ 200, [
+                'X-STOMP-foo' => 'something',
+                'X-STOMP-Reply-Address' => 'reply_queue',
+            ], [
+                'hello',
+            ] ];
+        }
+
         return [ 200, [], ['response'] ];
     };
 }

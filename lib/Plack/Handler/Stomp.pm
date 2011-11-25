@@ -1,24 +1,43 @@
 package Plack::Handler::Stomp;
-BEGIN {
+{
   $Plack::Handler::Stomp::VERSION = '0.001_01';
 }
-BEGIN {
+{
   $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
 }
 use Moose;
 use HTTP::Request;
 use Net::Stomp;
-use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
-use Moose::Util::TypeConstraints 'class_type';
-use MooseX::Types::Structured qw(Dict Optional Map);
+use MooseX::Types::Moose qw(Bool CodeRef);
+use Plack::Handler::Stomp::Types qw(NetStompish Logger
+                                    ServerConfigList
+                                    SubscriptionConfigList
+                                    Headers
+                                    PathMap
+                               );
+use Plack::Handler::Stomp::PathInfoMunger 'munge_path_info';
+use MooseX::Types::Common::Numeric qw(PositiveInt);
+use Plack::Handler::Stomp::Exceptions;
 use namespace::autoclean;
 use Try::Tiny;
+use Plack::Util;
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
 
+has logger => (
+    is => 'rw',
+    isa => Logger,
+    lazy_build => 1,
+);
+sub _build_logger {
+    require Plack::Handler::Stomp::StupidLogger;
+    Plack::Handler::Stomp::StupidLogger->new();
+}
+
 has connection => (
     is => 'rw',
-    isa => class_type('Net::Stomp'),
+    isa => NetStompish,
+    lazy_build => 1,
 );
 
 has connection_builder => (
@@ -29,13 +48,9 @@ has connection_builder => (
 
 has servers => (
     is => 'ro',
-    isa => ArrayRef[Dict[
-        hostname => Str,
-        port => Int,
-        connect_headers => Optional[HashRef],
-        subscribe_headers => Optional[HashRef],
-    ]],
+    isa => ServerConfigList,
     lazy => 1,
+    coerce => 1,
     builder => '_default_servers',
     traits => ['Array'],
     handles => {
@@ -59,9 +74,20 @@ sub current_server {
     return $self->servers->[-1];
 }
 
+has tries_per_server => (
+    is => 'ro',
+    isa => PositiveInt,
+    default => 1,
+);
+has connect_retry_delay => (
+    is => 'ro',
+    isa => PositiveInt,
+    default => 15,
+);
+
 has connect_headers => (
     is => 'ro',
-    isa => Map[Str,Value],
+    isa => Headers,
     lazy => 1,
     builder => '_default_connect_headers',
 );
@@ -69,7 +95,7 @@ sub _default_connect_headers { { } }
 
 has subscribe_headers => (
     is => 'ro',
-    isa => Map[Str,Value],
+    isa => Headers,
     lazy => 1,
     builder => '_default_subscribe_headers',
 );
@@ -77,11 +103,8 @@ sub _default_subscribe_headers { { } }
 
 has subscriptions => (
     is => 'ro',
-    isa => ArrayRef[Dict[
-        destination => Str,
-        path_info => Optional[Str],
-        headers => Optional[Map[Str,Value]],
-    ]],
+    isa => SubscriptionConfigList,
+    coerce => 1,
     lazy => 1,
     builder => '_default_subscriptions',
 );
@@ -89,7 +112,7 @@ sub _default_subscriptions { [] }
 
 has destination_path_map => (
     is => 'ro',
-    isa => Map[Str,Str],
+    isa => PathMap,
     default => sub { { } },
 );
 
@@ -102,13 +125,42 @@ has one_shot => (
 sub run {
     my ($self, $app) = @_;
 
-    $self->_connect();
-    $self->_subscribe();
+    SERVER_LOOP:
     while (1) {
-        my $frame = $self->connection->receive_frame();
-        $self->handle_stomp_frame($app, $frame);
+        my $exception;
+        try {
+            $self->_connect();
+            $self->_subscribe();
 
-        last if $self->one_shot;
+            FRAME_LOOP:
+            while (1) {
+                my $frame = $self->connection->receive_frame();
+                $self->handle_stomp_frame($app, $frame);
+
+                Plack::Handler::Stomp::Exceptions::OneShot->throw()
+                      if $self->one_shot;
+            }
+        } catch {
+            $exception = $_;
+        };
+        if ($exception) {
+            if (!blessed $exception) {
+                die "unhandled exception $exception";
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::AppError')) {
+                die $exception;
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::Stomp')) {
+                $self->clear_connection;
+                next SERVER_LOOP;
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::OneShot')) {
+                last SERVER_LOOP;
+            }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::UnknownFrame')) {
+                die $exception;
+            }
+        }
     }
 }
 
@@ -116,14 +168,14 @@ sub handle_stomp_frame {
     my ($self, $app, $frame) = @_;
 
     my $command = $frame->command();
-    if ($command eq 'MESSAGE') {
-        $self->handle_stomp_message($app, $frame);
-    }
-    elsif ($command eq 'ERROR') {
-        $self->handle_stomp_error($app, $frame);
+    my $method = $self->can("handle_stomp_\L$command");
+    if ($method) {
+        $self->$method($app, $frame);
     }
     else {
-        # XXX logging
+        Plack::Handler::Stomp::Exceptions::UnknownFrame->throw(
+            {frame=>$frame}
+        );
     }
 }
 
@@ -131,32 +183,109 @@ sub handle_stomp_error {
     my ($self, $app, $frame) = @_;
 
     my $error = $frame->headers->{message};
-    warn $error; # XXX logging
+    $self->logger->log_warn($error);
 }
 
 sub handle_stomp_message {
     my ($self, $app, $frame) = @_;
 
     my $env = $self->_build_psgi_env($frame);
-    my $response = $app->($env);
-    $self->connection->ack({ frame => $frame });
+    try {
+        my $response = $app->($env);
+
+        $self->maybe_send_reply($response);
+
+        $self->connection->ack({ frame => $frame });
+    } catch {
+        Plack::Handler::Stomp::Exceptions::AppError->throw({
+            app_error => $_
+        });
+    };
+}
+
+sub handle_stomp_receipt {
+    my ($self, $app, $frame) = @_;
+
+    $self->logger->log_debug('ignored RECEIPT frame for '
+                                 .$frame->headers->{'receipt-id'});
+}
+
+sub maybe_send_reply {
+    my ($self, $response) = @_;
+
+    my $reply_to = $self->where_should_send_reply($response);
+    if ($reply_to) {
+        $self->send_reply($response,$reply_to);
+    }
+
+    return;
+}
+
+sub where_should_send_reply {
+    my ($self, $response) = @_;
+
+    return Plack::Util::header_get($response->[1],
+                                   'X-STOMP-Reply-Address');
+}
+
+sub send_reply {
+    my ($self, $response, $reply_address) = @_;
+
+    my $reply_queue = '/remote-temp-queue/' . $reply_address;
+
+    my $content = '';
+    unless (Plack::Util::status_with_no_entity_body($response->[0])) {
+        Plack::Util::foreach($response->[2],
+                             sub{$content.=shift});
+    }
+
+    my %reply_hh = ();
+    while (my ($k,$v) = splice @{$response->[1]},0,2) {
+        $k=lc($k);
+        next if $k eq 'x-stomp-reply-address';
+        next unless $k =~ s{^x-stomp-}{};
+
+        $reply_hh{lc($k)} = $v;
+    }
+
+    $self->connection->send({
+        %reply_hh,
+        destination => $reply_queue,
+        body => $content
+    });
+
+    return;
+}
+
+sub _build_connection {
+    my ($self) = @_;
+
+    my $server = $self->next_server;
+
+    return $self->connection_builder->({
+        hostname => $server->{hostname},
+        port => $server->{port},
+    });
 }
 
 sub _connect {
     my ($self) = @_;
 
-    my $server = $self->next_server;
-
-    $self->connection($self->connection_builder->({
-        hostname => $server->{hostname},
-        port => $server->{port},
-    }));
-
-    my %headers = (
-        %{$self->connect_headers},
-        %{$server->{connect_headers} || {}},
-    );
-    $self->connection->connect(\%headers);
+    try {
+        # the connection will be created by the lazy builder
+        $self->connection; # needed to make sure that 'current_server'
+                           # is the right one
+        my $server = $self->current_server;
+        my %headers = (
+            %{$self->connect_headers},
+            %{$server->{connect_headers} || {}},
+        );
+        $self->connection->connect(\%headers);
+    } catch {
+        Plack::Handler::Stomp::Exceptions::Stomp->throw({
+            stomp_error => $_
+        });
+    };
 }
 
 sub _subscribe {
@@ -169,23 +298,29 @@ sub _subscribe {
 
     my $sub_id = 0;
 
-    for my $sub (@{$self->subscriptions}) {
-        my $destination = $sub->{destination};
-        my $more_headers = $sub->{headers} || {};
-        $self->connection->subscribe({
-            destination => $destination,
-            %headers,
-            %$more_headers,
-            id => $sub_id,
-            ack => 'client',
+    try {
+        for my $sub (@{$self->subscriptions}) {
+            my $destination = $sub->{destination};
+            my $more_headers = $sub->{headers} || {};
+            $self->connection->subscribe({
+                destination => $destination,
+                %headers,
+                %$more_headers,
+                id => $sub_id,
+                ack => 'client',
+            });
+
+            $self->destination_path_map->{$destination} =
+                $self->destination_path_map->{"/subscription/$sub_id"} =
+                    $sub->{path_info} || $destination;
+
+            ++$sub_id;
+        }
+    } catch {
+        Plack::Handler::Stomp::Exceptions::Stomp->throw({
+            stomp_error => $_
         });
-
-        $self->destination_path_map->{$destination} =
-        $self->destination_path_map->{"/subscription/$sub_id"} =
-            $sub->{path_info} || $destination;
-
-        ++$sub_id;
-    }
+    };
 }
 
 sub _build_psgi_env {
@@ -195,8 +330,17 @@ sub _build_psgi_env {
     my $sub_id = $frame->headers->{subscription};
 
     my $path_info;
-    if ($sub_id) { $path_info = $self->destination_path_map->{"/subscription/$sub_id"} };
+    if (defined $sub_id) {
+        $path_info = $self->destination_path_map->{"/subscription/$sub_id"}
+    };
     $path_info ||= $self->destination_path_map->{$destination};
+    if ($path_info) {
+        $path_info = munge_path_info(
+            $path_info,
+            $self->current_server,
+            $frame,
+        );
+    }
     $path_info ||= $destination; # should not really be needed
 
     my $env = {
@@ -230,11 +374,9 @@ sub _build_psgi_env {
             open my $input, '<', \($frame->body);
             $input;
         },
-        'psgi.errors' => do {
-            my $foo;
-            open my $errors, '>', \$foo; # XXX logging
-            $errors;
-        },
+        'psgi.errors' => Plack::Util::inline_object(
+            print => sub { $self->logger->log_error(@_) },
+        ),
     };
 
     if ($frame->headers) {

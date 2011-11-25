@@ -34,6 +34,7 @@ has frames_sent => (
     handles => {
         queue_sent_frame => 'push',
         sent_frames_count => 'count',
+        clear_sent_frames => 'clear',
     }
 );
 
@@ -64,6 +65,7 @@ has constructor_calls => (
     handles => {
         queue_constructor_call => 'push',
         constructor_calls_count => 'count',
+        clear_constructor_calls => 'clear',
     },
 );
 
@@ -75,6 +77,7 @@ has connection_calls => (
     handles => {
         queue_connection_call => 'push',
         connection_calls_count => 'count',
+        clear_connection_calls => 'clear',
     },
 );
 
@@ -86,6 +89,7 @@ has disconnection_calls => (
     handles => {
         queue_disconnection_call => 'push',
         disconnection_calls_count => 'count',
+        clear_disconnection_calls => 'clear',
     },
 );
 
@@ -97,6 +101,7 @@ has subscription_calls => (
     handles => {
         queue_subscription_call => 'push',
         subscription_calls_count => 'count',
+        clear_subscription_calls => 'clear',
     },
 );
 
@@ -108,6 +113,18 @@ has unsubscription_calls => (
     handles => {
         queue_unsubscription_call => 'push',
         unsubscription_calls_count => 'count',
+        clear_unsubscription_calls => 'clear',
+    },
+);
+
+has log_messages => (
+    is => 'rw',
+    isa => ArrayRef,
+    traits => ['Array'],
+    handles => {
+        add_log_message => 'push',
+        log_messages_count => 'count',
+        clear_log_messages => 'clear',
     },
 );
 
@@ -115,6 +132,7 @@ sub setup_handler {
     my ($self) = @_;
 
     return Plack::Handler::Stomp->new({
+        logger => $self,
         %{$self->handler_args},
         connection_builder => sub {
             my ($params) = @_;
@@ -129,6 +147,36 @@ sub setup_handler {
             },$params);
         },
     })
+}
+
+sub log_debug {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['debug',@msg]);
+}
+sub log_info {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['info',@msg]);
+}
+sub log_warn {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['warn',@msg]);
+}
+sub log_error {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['error',@msg]);
+}
+
+sub clear_calls_and_queues {
+    my ($self) = @_;
+    $self->clear_sent_frames;
+    $self->clear_frames_to_receive;
+    $self->clear_constructor_calls;
+    $self->clear_connection_calls;
+    $self->clear_disconnection_calls;
+    $self->clear_subscription_calls;
+    $self->clear_unsubscription_calls;
+    $self->clear_log_messages;
+    return;
 }
 
 1;
