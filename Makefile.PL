@@ -38,7 +38,6 @@ my %WriteMakefileArgs = (
     "MooseX::Types::Moose" => 0,
     "MooseX::Types::Structured" => 0,
     "Net::Stomp" => 0,
-    "Plack::Handler::Stomp::Exceptions::Stringy" => 0,
     "Plack::Util" => 0,
     "Sub::Exporter" => 0,
     "Throwable" => 0,

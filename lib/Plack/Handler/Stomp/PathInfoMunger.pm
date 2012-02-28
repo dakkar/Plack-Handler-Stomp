@@ -11,6 +11,8 @@ use Sub::Exporter -setup => {
     groups => { default => ['munge_path_info'] },
 };
 
+# ABSTRACT: printf-style interpolations for PATH_INFO
+
 my $regex = qr{
  (?:%\{
   (.*?)
@@ -50,7 +52,7 @@ __END__
 
 =head1 NAME
 
-Plack::Handler::Stomp::PathInfoMunger
+Plack::Handler::Stomp::PathInfoMunger - printf-style interpolations for PATH_INFO
 
 =head1 VERSION
 

@@ -7,19 +7,21 @@ package Plack::Handler::Stomp::StupidLogger;
 }
 use strict;use warnings;
 
+# ABSTRACT: dead-simple logger for Plack::Handler::Stomp
+
 sub new {
     return bless {}, shift;
 }
 
-sub log_debug { }
+sub debug { }
 
-sub log_info { }
+sub info { }
 
-sub log_warn {
+sub warn {
     my ($self,@msg) = @_;
     warn "@msg\n";
 }
-sub log_error {
+sub error {
     my ($self,@msg) = @_;
     warn "@msg\n";
 }
@@ -33,7 +35,7 @@ __END__
 
 =head1 NAME
 
-Plack::Handler::Stomp::StupidLogger
+Plack::Handler::Stomp::StupidLogger - dead-simple logger for Plack::Handler::Stomp
 
 =head1 VERSION
 

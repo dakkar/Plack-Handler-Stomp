@@ -149,19 +149,19 @@ sub setup_handler {
     })
 }
 
-sub log_debug {
+sub debug {
     my ($self,@msg) = @_;
     $self->add_log_message(['debug',@msg]);
 }
-sub log_info {
+sub info {
     my ($self,@msg) = @_;
     $self->add_log_message(['info',@msg]);
 }
-sub log_warn {
+sub warn {
     my ($self,@msg) = @_;
     $self->add_log_message(['warn',@msg]);
 }
-sub log_error {
+sub error {
     my ($self,@msg) = @_;
     $self->add_log_message(['error',@msg]);
 }

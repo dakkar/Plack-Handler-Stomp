@@ -6,6 +6,8 @@ package Plack::Handler::Stomp::Exceptions;
   $Plack::Handler::Stomp::Exceptions::DIST = 'Plack-Handler-Stomp';
 }
 
+# ABSTRACT: exception classes for Plack::Handler::Stomp
+
 {package Plack::Handler::Stomp::Exceptions::Stringy;
 {
   $Plack::Handler::Stomp::Exceptions::Stringy::VERSION = '0.001_01';
@@ -87,7 +89,7 @@ __END__
 
 =head1 NAME
 
-Plack::Handler::Stomp::Exceptions
+Plack::Handler::Stomp::Exceptions - exception classes for Plack::Handler::Stomp
 
 =head1 VERSION
 

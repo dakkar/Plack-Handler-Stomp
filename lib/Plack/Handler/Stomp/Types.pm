@@ -19,13 +19,15 @@ use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
 use MooseX::Types::Structured qw(Dict Optional Map);
 use MooseX::Types::Common::String qw(NonEmptySimpleStr);
 
+# ABSTRACT: type definitions for Plack::Handler::Stomp
+
 duck_type NetStompish, [qw(connect
                            subscribe unsubscribe
                            receive_frame ack
                            send)];
 
-duck_type Logger, [qw(log_debug log_info
-                      log_warn log_error)];
+duck_type Logger, [qw(debug info
+                      warn error)];
 
 subtype Hostname, as Str; # maybe too lax?
 subtype PortNumber, as Int,
@@ -69,7 +71,7 @@ __END__
 
 =head1 NAME
 
-Plack::Handler::Stomp::Types
+Plack::Handler::Stomp::Types - type definitions for Plack::Handler::Stomp
 
 =head1 VERSION
 

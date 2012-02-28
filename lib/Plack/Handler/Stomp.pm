@@ -184,7 +184,7 @@ sub handle_stomp_error {
     my ($self, $app, $frame) = @_;
 
     my $error = $frame->headers->{message};
-    $self->logger->log_warn($error);
+    $self->logger->warn($error);
 }
 
 sub handle_stomp_message {
@@ -207,8 +207,8 @@ sub handle_stomp_message {
 sub handle_stomp_receipt {
     my ($self, $app, $frame) = @_;
 
-    $self->logger->log_debug('ignored RECEIPT frame for '
-                                 .$frame->headers->{'receipt-id'});
+    $self->logger->debug('ignored RECEIPT frame for '
+                             .$frame->headers->{'receipt-id'});
 }
 
 sub maybe_send_reply {
@@ -376,7 +376,7 @@ sub _build_psgi_env {
             $input;
         },
         'psgi.errors' => Plack::Util::inline_object(
-            print => sub { $self->logger->log_error(@_) },
+            print => sub { $self->logger->error(@_) },
         ),
     };
 
