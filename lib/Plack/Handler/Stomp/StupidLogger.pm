@@ -29,6 +29,8 @@ sub log_error {
 __END__
 =pod
 
+=encoding utf-8
+
 =head1 NAME
 
 Plack::Handler::Stomp::StupidLogger

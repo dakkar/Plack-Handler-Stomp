@@ -31,3 +31,4 @@ t/release-pod-syntax.t
 t/request_subscription.t
 t/response.t
 t/subscription.t
+weaver.ini

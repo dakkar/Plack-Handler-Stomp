@@ -42,7 +42,6 @@ my %WriteMakefileArgs = (
     "Plack::Util" => 0,
     "Sub::Exporter" => 0,
     "Throwable" => 0,
-    "Throwable::Error" => 0,
     "Try::Tiny" => 0,
     "namespace::autoclean" => 0,
     "overload" => 0,

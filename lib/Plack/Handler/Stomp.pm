@@ -24,6 +24,7 @@ use Plack::Util;
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
 
+
 has logger => (
     is => 'rw',
     isa => Logger,
@@ -393,6 +394,8 @@ sub _build_psgi_env {
 __END__
 =pod
 
+=encoding utf-8
+
 =head1 NAME
 
 Plack::Handler::Stomp - adapt STOMP to (almost) HTTP, via Plack
@@ -400,6 +403,16 @@ Plack::Handler::Stomp - adapt STOMP to (almost) HTTP, via Plack
 =head1 VERSION
 
 version 0.001_01
+
+=head1 DESCRIPTION
+
+Sometimes you want to use your very nice web-application-framework
+dispatcher, module loading mechanisms, etc, but you're not really
+writing a web application, you're writing a ActiveMQ consumer. In
+those cases, this module is for you.
+
+This module is inspired by L<Catalyst::Engine::Stomp>, but aims to be
+usable by any PSGI application.
 
 =head1 AUTHOR
 

@@ -43,13 +43,13 @@ package Plack::Handler::Stomp::Exceptions;
 {
   $Plack::Handler::Stomp::Exceptions::AppError::DIST = 'Plack-Handler-Stomp';
 }
- use Moose;extends 'Throwable::Error';
+ use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
  has '+previous_exception' => (
      init_arg => 'app_error',
  );
- has '+message' => (
-     default => 'The application died',
- );
+ sub as_string {
+     return 'The application died:'.$_[0]->previous_exception;
+ }
 }
 
 {package Plack::Handler::Stomp::Exceptions::Stomp;
@@ -59,13 +59,13 @@ package Plack::Handler::Stomp::Exceptions;
 {
   $Plack::Handler::Stomp::Exceptions::Stomp::DIST = 'Plack-Handler-Stomp';
 }
- use Moose;extends 'Throwable::Error';
+ use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
  has '+previous_exception' => (
      init_arg => 'stomp_error',
  );
- has '+message' => (
-     default => 'STOMP protocol/network error',
- );
+ sub as_string {
+     return 'STOMP protocol/network error:'.$_[0]->previous_exception;
+ }
 }
 
 {package Plack::Handler::Stomp::Exceptions::OneShot;
@@ -82,6 +82,8 @@ package Plack::Handler::Stomp::Exceptions;
 
 __END__
 =pod
+
+=encoding utf-8
 
 =head1 NAME
 
