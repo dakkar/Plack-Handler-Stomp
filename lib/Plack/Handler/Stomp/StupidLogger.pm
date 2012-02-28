@@ -1,6 +1,8 @@
 package Plack::Handler::Stomp::StupidLogger;
 use strict;use warnings;
 
+# ABSTRACT: dead-simple logger for Plack::Handler::Stomp
+
 sub new {
     return bless {}, shift;
 }

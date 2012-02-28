@@ -5,6 +5,8 @@ use Sub::Exporter -setup => {
     groups => { default => ['munge_path_info'] },
 };
 
+# ABSTRACT: printf-style interpolations for PATH_INFO
+
 my $regex = qr{
  (?:%\{
   (.*?)

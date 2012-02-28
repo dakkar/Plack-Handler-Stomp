@@ -1,5 +1,7 @@
 package Plack::Handler::Stomp::Exceptions;
 
+# ABSTRACT: exception classes for Plack::Handler::Stomp
+
 {package Plack::Handler::Stomp::Exceptions::Stringy;
  use Moose::Role;
  use overload

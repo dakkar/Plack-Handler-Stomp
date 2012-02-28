@@ -13,6 +13,8 @@ use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
 use MooseX::Types::Structured qw(Dict Optional Map);
 use MooseX::Types::Common::String qw(NonEmptySimpleStr);
 
+# ABSTRACT: type definitions for Plack::Handler::Stomp
+
 duck_type NetStompish, [qw(connect
                            subscribe unsubscribe
                            receive_frame ack
