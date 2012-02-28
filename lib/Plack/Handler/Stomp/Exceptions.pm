@@ -8,6 +8,7 @@ package Plack::Handler::Stomp::Exceptions;
 
 # ABSTRACT: exception classes for Plack::Handler::Stomp
 
+
 {package Plack::Handler::Stomp::Exceptions::Stringy;
 {
   $Plack::Handler::Stomp::Exceptions::Stringy::VERSION = '0.001_01';
@@ -94,6 +95,35 @@ Plack::Handler::Stomp::Exceptions - exception classes for Plack::Handler::Stomp
 =head1 VERSION
 
 version 0.001_01
+
+=head1 DESCRIPTION
+
+This file defines the following exception classes:
+
+=over 4
+
+=item C<Plack::Handler::Stomp::Exceptions::UnknownFrame>
+
+Thrown whenever we receive a frame we don't know how to handle; has a
+C<frame> attribute containing the frame in question.
+
+=item C<Plack::Handler::Stomp::Exceptions::AppError>
+
+Thrown whenever the PSGI application dies; has a C<previous_exception>
+attribute containing the exception that the application threw.
+
+=item C<Plack::Handler::Stomp::Exceptions::Stomp>
+
+Thrown whenever the STOMP library (usually L<Net::Stomp>) dies; has a
+C<previous_exception> attribute containing the exception that the
+library threw.
+
+=item C<Plack::Handler::Stomp::Exceptions::OneShot>
+
+Thrown to stop the C<run> loop after receiving a message, if
+C<one_shot> is true (see L<Plack::Handler::Stomp/run>).
+
+=back
 
 =head1 AUTHOR
 

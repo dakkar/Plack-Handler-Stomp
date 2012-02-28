@@ -9,18 +9,24 @@ use strict;use warnings;
 
 # ABSTRACT: dead-simple logger for Plack::Handler::Stomp
 
+
 sub new {
     return bless {}, shift;
 }
 
+
 sub debug { }
 
+
 sub info { }
+
 
 sub warn {
     my ($self,@msg) = @_;
     warn "@msg\n";
 }
+
+
 sub error {
     my ($self,@msg) = @_;
     warn "@msg\n";
@@ -40,6 +46,28 @@ Plack::Handler::Stomp::StupidLogger - dead-simple logger for Plack::Handler::Sto
 =head1 VERSION
 
 version 0.001_01
+
+=head1 METHODS
+
+=head2 C<new>
+
+Minimal constructor, no arguments.
+
+=head2 C<debug>
+
+No-op
+
+=head2 C<info>
+
+No-op
+
+=head2 C<warn>
+
+Calls Perl's C<warn>.
+
+=head2 C<error>
+
+Calls Perl's C<warn>.
 
 =head1 AUTHOR
 

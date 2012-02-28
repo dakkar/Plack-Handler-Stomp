@@ -19,6 +19,7 @@ my $regex = qr{
  \})
 }x;
 
+
 sub munge_path_info {
     my ($fmt,$server,$frame) = @_;
 
@@ -57,6 +58,38 @@ Plack::Handler::Stomp::PathInfoMunger - printf-style interpolations for PATH_INF
 =head1 VERSION
 
 version 0.001_01
+
+=head1 FUNCTIONS
+
+=head2 C<munge_path_info>
+
+  my $str = munge_path_info($format_string,$server_config,$stomp_frame);
+
+Interprets the C<$format_string> in a C<printf>-like way: every C<
+%{something} > is replaced with a value from the C<$server_config> or
+the C<$stomp_frame>. In particular:
+
+=over 4
+
+=item C<%{broker_hostname}>
+
+is replaced by the value of C<< $server_config->{hostname} >>
+
+=item C<%{broker_port}>
+
+is replaced by the value of C<< $server_config->{port} >>
+
+=item C<%{header.something}>
+
+is replaced by the value of C<< $stomp_frame->headers->{something} >>
+(of course C<something> in this example can be replaced by whatever
+string you want).
+
+=item anything else
+
+is replaced by an empty string (i.e. it's removed).
+
+=back
 
 =head1 AUTHOR
 
