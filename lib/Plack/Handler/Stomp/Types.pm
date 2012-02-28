@@ -18,8 +18,8 @@ duck_type NetStompish, [qw(connect
                            receive_frame ack
                            send)];
 
-duck_type Logger, [qw(log_debug log_info
-                      log_warn log_error)];
+duck_type Logger, [qw(debug info
+                      warn error)];
 
 subtype Hostname, as Str; # maybe too lax?
 subtype PortNumber, as Int,

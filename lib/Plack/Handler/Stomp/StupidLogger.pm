@@ -5,15 +5,15 @@ sub new {
     return bless {}, shift;
 }
 
-sub log_debug { }
+sub debug { }
 
-sub log_info { }
+sub info { }
 
-sub log_warn {
+sub warn {
     my ($self,@msg) = @_;
     warn "@msg\n";
 }
-sub log_error {
+sub error {
     my ($self,@msg) = @_;
     warn "@msg\n";
 }
