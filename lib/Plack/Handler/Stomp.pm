@@ -377,8 +377,8 @@ sub handle_stomp_error {
 Calls L</build_psgi_env> to convert the STOMP message into a PSGI
 environment.
 
-The application is then invoked on this environment, any response is
-sent back via L</maybe_send_reply>, and the frame is acknowledged.
+The environment is then passed to L</process_the_message>, and the
+frame is acknowledged.
 
 =cut
 
@@ -396,6 +396,15 @@ sub handle_stomp_message {
         });
     };
 }
+
+=method C<process_the_message>
+
+Runs a PSGI environment through the application, then flattens the
+response body into a simple string.
+
+The response so flattened is sent back via L</maybe_send_reply>.
+
+=cut
 
 sub process_the_message {
     my ($self,$app,$env) = @_;

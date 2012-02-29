@@ -37,7 +37,7 @@ Calls Perl's C<warn>.
 
 sub warn {
     my ($self,@msg) = @_;
-    warn "@msg\n";
+    CORE::warn "@msg\n";
 }
 
 =method C<error>
@@ -48,7 +48,7 @@ Calls Perl's C<warn>.
 
 sub error {
     my ($self,@msg) = @_;
-    warn "@msg\n";
+    CORE::warn "@msg\n";
 }
 
 1;
