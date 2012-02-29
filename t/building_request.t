@@ -4,13 +4,16 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester','TestApp';
+use Test::Plack::Handler::Stomp;
+with 'TestApp';
 
 test 'a simple request' => sub {
     my ($self) = @_;
 
-    $self->clear_frames_to_receive;
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    my $t = Test::Plack::Handler::Stomp->new();
+
+    $t->clear_frames_to_receive;
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing',
@@ -19,7 +22,7 @@ test 'a simple request' => sub {
         body => 'foo',
     }));
 
-    $self->handler->run($self->psgi_test_app);
+    $t->handler->run($self->psgi_test_app);
 
     my %expected = (
         # server
@@ -62,8 +65,8 @@ test 'a simple request' => sub {
               \%expected,
               'with expected content');
 
-    is($self->sent_frames_count,1,'sent one frame');
-    my $frame = $self->frames_sent->[0];
+    is($t->sent_frames_count,1,'sent one frame');
+    my $frame = $t->frames_sent->[0];
     is($frame->command,'ACK',q{it's an ack});
     is_deeply($frame->headers,
               { 'message-id' => 123 },

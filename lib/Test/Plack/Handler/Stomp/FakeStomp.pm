@@ -1,4 +1,4 @@
-package FakeStomp;
+package Test::Plack::Handler::Stomp::FakeStomp;
 use strict;
 use warnings;
 use parent 'Net::Stomp';

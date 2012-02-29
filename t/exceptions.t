@@ -4,18 +4,26 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester','TestApp';
+use Test::Plack::Handler::Stomp;
+with 'TestApp';
+
+has t => (
+    is => 'rw',
+    default => sub { Test::Plack::Handler::Stomp->new() }
+);
 
 test 'unknown frames' => sub {
     my ($self) = @_;
 
-    $self->clear_frames_to_receive;
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    my $t=$self->t;
+
+    $t->clear_frames_to_receive;
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'WRONG',
         headers => { },
         body => 'boom',
     }));
-    $self->set_arg(
+    $t->set_arg(
         subscriptions => [
             {
                 destination => '/queue/testing',
@@ -25,7 +33,7 @@ test 'unknown frames' => sub {
     );
 
     my $exception = exception {
-        $self->handler->run($self->psgi_test_app)
+        $t->handler->run($self->psgi_test_app)
     };
     isa_ok($exception,'Plack::Handler::Stomp::Exceptions::UnknownFrame',
            'correct exception thrown');
@@ -36,8 +44,10 @@ test 'unknown frames' => sub {
 test 'app error' => sub {
     my ($self) = @_;
 
-    $self->clear_calls_and_queues;
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    my $t=$self->t;
+
+    $t->clear_calls_and_queues;
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing',
@@ -46,13 +56,13 @@ test 'app error' => sub {
     }));
 
     my $exception = exception {
-        $self->handler->run($self->psgi_test_app)
+        $t->handler->run($self->psgi_test_app)
     };
     isa_ok($exception,'Plack::Handler::Stomp::Exceptions::AppError',
            'correct exception thrown');
     is($exception->previous_exception,"I died\n",
        'exception was saved');
-    is($self->sent_frames_count,0,
+    is($t->sent_frames_count,0,
        'the message was not ACKed');
 };
 

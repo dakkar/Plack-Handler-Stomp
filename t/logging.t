@@ -4,13 +4,16 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester','TestApp';
+use Test::Plack::Handler::Stomp;
+with 'TestApp';
 
 test 'custom logger' => sub {
     my ($self) = @_;
 
-    $self->clear_frames_to_receive;
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    my $t = Test::Plack::Handler::Stomp->new();
+
+    $t->clear_frames_to_receive;
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing',
@@ -18,14 +21,14 @@ test 'custom logger' => sub {
         },
         body => 'error please',
     }));
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'RECEIPT',
         headers => {
             'receipt-id' => 1234,
         },
         body => '',
     }));
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'ERROR',
         headers => {
             message => 'testing error',
@@ -33,7 +36,7 @@ test 'custom logger' => sub {
         body => '',
     }));
 
-    $self->set_arg(
+    $t->set_arg(
         subscriptions => [
             {
                 destination => '/queue/testing',
@@ -41,20 +44,20 @@ test 'custom logger' => sub {
         ],
     );
 
-    $self->handler->run($self->psgi_test_app);
-    my $msg = $self->log_messages->[-1];
+    $t->handler->run($self->psgi_test_app);
+    my $msg = $t->log_messages->[-1];
     is_deeply($msg,
               ['error','your error'],
               'app error logged');
 
-    $self->handler->run($self->psgi_test_app);
-    $msg = $self->log_messages->[-1];
+    $t->handler->run($self->psgi_test_app);
+    $msg = $t->log_messages->[-1];
     is_deeply($msg,
               ['debug','ignored RECEIPT frame for 1234'],
               'receipt debug logged');
 
-    $self->handler->run($self->psgi_test_app);
-    $msg = $self->log_messages->[-1];
+    $t->handler->run($self->psgi_test_app);
+    $msg = $t->log_messages->[-1];
     is_deeply($msg,
               ['warn','testing error'],
               'STOMP ERROR frame logged');

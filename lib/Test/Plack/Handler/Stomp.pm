@@ -1,10 +1,10 @@
-package HandlerTester;
-use Moose::Role;
+package Test::Plack::Handler::Stomp;
+use Moose;
 use Moose::Util::TypeConstraints 'class_type';
 use MooseX::Types::Moose qw(ArrayRef HashRef Maybe);
 
 use namespace::autoclean;
-use FakeStomp;
+use Test::Plack::Handler::Stomp::FakeStomp;
 use Plack::Handler::Stomp;
 
 has handler_args => (
@@ -136,7 +136,7 @@ sub setup_handler {
         %{$self->handler_args},
         connection_builder => sub {
             my ($params) = @_;
-            return FakeStomp->new({
+            return Test::Plack::Handler::Stomp::FakeStomp->new({
                 new => sub { $self->queue_constructor_call(shift) },
                 connect => sub { $self->queue_connection_call(shift) },
                 disconnect => sub { $self->queue_disconnection_call(shift) },
