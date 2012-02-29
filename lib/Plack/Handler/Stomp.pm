@@ -671,6 +671,8 @@ sub build_psgi_env {
     }
     $path_info ||= $destination; # should not really be needed
 
+    use bytes;
+
     my $env = {
         # server
         SERVER_NAME => 'localhost',
@@ -689,6 +691,7 @@ sub build_psgi_env {
 
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
+        HTTP_CONTENT_LENGTH => length($frame->body),
 
         # psgi
         'psgi.version' => [1,0],
