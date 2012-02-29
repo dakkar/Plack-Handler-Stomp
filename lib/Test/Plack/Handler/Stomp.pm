@@ -7,6 +7,62 @@ use namespace::autoclean;
 use Test::Plack::Handler::Stomp::FakeStomp;
 use Plack::Handler::Stomp;
 
+# ABSTRACT: testing library for Plack::Handler::Stomp
+
+=head1 SYNOPSIS
+
+  my $t = Test::Plack::Handler::Stomp->new();
+  $t->set_arg(
+    subscriptions => [
+      { destination => '/queue/input_queue',
+        path_info => '/input_queue', },
+    ],
+  );
+  $t->clear_frames_to_receive;
+
+  $t->queue_frame_to_receive(Net::Stomp::Frame->new({
+        command => 'MESSAGE',
+        headers => {
+            destination => '/queue/input_queue',
+            subscription => 0,
+            type => 'my_type',
+            'message-id' => 356,
+        },
+        body => '{"foo":"bar"}',
+    }));
+
+    $t->handler->run($app);
+
+    check($t->frames_sent);
+
+=head1 DESCRIPTION
+
+Testing a PSGI application that expects JMS/STOMP messages can be a
+pain. This library helps reduce that pain.
+
+It wraps a L<Plack::Handler::Stomp>, connecting it to a
+L<Test::Plack::Handler::Stomp::FakeStomp> instead of a real STOMP
+connection, and allows you to inspect everything that happens to the
+connection.
+
+=cut
+
+=attr C<handler_args>
+
+Hashref, arguments to pass to L<Plack::Handler::Stomp>'s
+constructor. You can add to this via the L</set_arg> method. Defaults
+to C<< { one_shot => 1 } >>, to avoid having L<Plack::Handler::Stomp>
+loop forever.
+
+=method C<set_arg>
+
+  $handler->set_arg(foo=>'bar',some=>'thing');
+
+Sets arguments for L<Plack::Handler::Stomp>'s constructor, see
+C</handler_args>.
+
+=cut
+
 has handler_args => (
     is => 'ro',
     isa => HashRef,
@@ -19,12 +75,46 @@ has handler_args => (
     },
 );
 
+=attr C<handler>
+
+A L<Plack::Handler::Stomp> instance. It's built on-demand via
+L</setup_handler>. You can clear it with L</clear_handler> to have it
+rebuilt (for example, if you have changed L</handler_args>)
+
+=method C<clear_handler>
+
+Destroys the L</handler>, forcing it to be rebuilt next time it's
+needed.
+
+=cut
+
 has handler => (
     is => 'ro',
     isa => class_type('Plack::Handler::Stomp'),
     lazy => 1,
     builder => 'setup_handler',
+    clearer => 'clear_handler',
 );
+
+=attr C<frames_sent>
+
+Arrayref of L<Net::Stomp::Frame> objects that L<Plack::Handler::Stomp>
+sent. Can be edited via L</queue_sent_frame>, L</sent_frames_count>,
+L</clear_sent_frames>. Defaults to the empty array.
+
+=method C<queue_sent_frame>
+
+Adds a frame to the end of L</frames_sent>.
+
+=method C<sent_frames_count>
+
+Returns the number of elements in L</frames_sent>.
+
+=method C<clear_sent_frames>
+
+Removes all elements from L</frames_sent>.
+
+=cut
 
 has frames_sent => (
     is => 'rw',
@@ -37,6 +127,34 @@ has frames_sent => (
         clear_sent_frames => 'clear',
     }
 );
+
+=attr C<frames_to_receive>
+
+Arrayref of L<Net::Stomp::Frame> objects that L<Plack::Handler::Stomp>
+will consume. Can be edited via L</queue_frame_to_receive>,
+L</next_frame_to_receive>, L</frames_left_to_receive>,
+L</clear_frames_to_receive>.
+
+Defaults to an array with a single C<ERROR> frame.
+
+=method C<queue_frame_to_receive>
+
+Adds a frame to the end of L</frames_to_receive>.
+
+=method C<next_frame_to_receive>
+
+Removes a frame from the beginning of L</frames_to_receive> and
+returns it.
+
+=method C<frames_left_to_receive>
+
+Returns the number of elements in L</frames_to_receive>.
+
+=method C<clear_frames_to_receive>
+
+Removes all elements from L</frames_to_receive>.
+
+=cut
 
 has frames_to_receive => (
     is => 'rw',
@@ -56,6 +174,13 @@ has frames_to_receive => (
         clear_frames_to_receive => 'clear',
     },
 );
+
+=attr C<constructor_calls>
+
+Arrayref of whatever was passed to the
+L<Test::Plack::Handler::Stomp::FakeStomp> constructor.
+
+=cut
 
 has constructor_calls => (
     is => 'rw',
