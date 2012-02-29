@@ -387,9 +387,22 @@ sub handle_stomp_message {
 
     my $env = $self->build_psgi_env($frame);
     try {
-        my $response = $app->($env);
+        $DB::single=1;
+        my $res = $app->($env);
 
-        $self->maybe_send_reply($response);
+        if (ref $res eq 'ARRAY') {
+            $self->handle_response($res);
+        }
+        elsif (ref $res eq 'CODE') {
+            $res->(sub {
+                       $self->handle_response($_[0]);
+                   });
+        }
+        else {
+            Plack::Handler::Stomp::Exceptions::AppError->throw({
+                app_error => "Bad response $res"
+            });
+        }
 
         $self->connection->ack({ frame => $frame });
     } catch {
@@ -397,6 +410,17 @@ sub handle_stomp_message {
             app_error => $_
         });
     };
+}
+
+sub handle_response {
+    my ($self,$response) = @_;
+
+    {use Data::Printer;p $response;
+ }
+
+    $self->maybe_send_reply($response);
+
+    return;
 }
 
 =method C<handle_stomp_receipt>
@@ -594,7 +618,7 @@ Builds a PSGI environment from the message, like:
   'psgi.multiprocess' => 0,
   'psgi.run_once' => 0,
   'psgi.nonblocking' => 0,
-  'psgi.streaming' => 0,
+  'psgi.streaming' => 1,
 
 In addition, reading from C<psgi.input> will return the message body,
 and writing to C<psgi.errors> will log via the L</logger> at level
@@ -656,7 +680,7 @@ sub build_psgi_env {
         'psgi.multiprocess' => 0,
         'psgi.run_once' => 0,
         'psgi.nonblocking' => 0,
-        'psgi.streaming' => 0,
+        'psgi.streaming' => 1,
         'psgi.input' => do {
             open my $input, '<', \($frame->body);
             $input;
@@ -668,7 +692,7 @@ sub build_psgi_env {
 
     if ($frame->headers) {
         for my $header (keys %{$frame->headers}) {
-            $env->{"stomp.$header"} = $frame->headers->{$header};
+            $env->{"jms.$header"} = $frame->headers->{$header};
         }
     }
 

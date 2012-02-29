@@ -50,11 +50,11 @@ test 'a simple request' => sub {
         'psgi.multiprocess' => 0,
         'psgi.run_once' => 0,
         'psgi.nonblocking' => 0,
-        'psgi.streaming' => 0,
+        'psgi.streaming' => 1,
 
         # stomp
-        'stomp.destination' => '/queue/testing',
-        'stomp.message-id' => 123,
+        'jms.destination' => '/queue/testing',
+        'jms.message-id' => 123,
 
         # application
         'testapp.body' => 'foo',

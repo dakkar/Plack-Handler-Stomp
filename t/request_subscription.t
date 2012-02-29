@@ -41,13 +41,13 @@ test 'a simple request' => sub {
     $t->handler->run($self->psgi_test_app);
 
     my $req = $self->requests_received->[-1];
-    is($req->{'stomp.destination'},'/queue/testing','destination passed through');
+    is($req->{'jms.destination'},'/queue/testing','destination passed through');
     is($req->{PATH_INFO},'/my/path','path mapped');
 
     $t->handler->run($self->psgi_test_app);
 
     $req = $self->requests_received->[-1];
-    is($req->{'stomp.destination'},'/queue/testing-wrong-on-purpose','destination passed through');
+    is($req->{'jms.destination'},'/queue/testing-wrong-on-purpose','destination passed through');
     is($req->{PATH_INFO},'/my/path','path mapped');
 };
 
