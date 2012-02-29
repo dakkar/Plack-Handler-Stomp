@@ -387,22 +387,7 @@ sub handle_stomp_message {
 
     my $env = $self->build_psgi_env($frame);
     try {
-        $DB::single=1;
-        my $res = $app->($env);
-
-        if (ref $res eq 'ARRAY') {
-            $self->handle_response($res);
-        }
-        elsif (ref $res eq 'CODE') {
-            $res->(sub {
-                       $self->handle_response($_[0]);
-                   });
-        }
-        else {
-            Plack::Handler::Stomp::Exceptions::AppError->throw({
-                app_error => "Bad response $res"
-            });
-        }
+        $self->process_the_message($app,$env);
 
         $self->connection->ack({ frame => $frame });
     } catch {
@@ -412,13 +397,45 @@ sub handle_stomp_message {
     };
 }
 
-sub handle_response {
-    my ($self,$response) = @_;
+sub process_the_message {
+    my ($self,$app,$env) = @_;
 
-    {use Data::Printer;p $response;
- }
+    my $res = $app->($env);
 
-    $self->maybe_send_reply($response);
+    my $flattened_response=[];
+    my $cb = sub { $flattened_response->[2].=$_[0] };
+
+    my $response_handler = sub {
+        my ($response) = @_;
+
+        $flattened_response->[0]=$response->[0];
+        $flattened_response->[1]=$response->[1];
+
+        my $body=$response->[2];
+        if (defined $body) {
+            Plack::Util::foreach($body, $cb);
+        }
+        else {
+            return Plack::Util::inline_object(
+                write => $cb,
+                close => sub { },
+            );
+        }
+    };
+
+    if (ref $res eq 'ARRAY') {
+        $response_handler->($res);
+    }
+    elsif (ref $res eq 'CODE') {
+        $res->($response_handler);
+    }
+    else {
+        Plack::Handler::Stomp::Exceptions::AppError->throw({
+            app_error => "Bad response $res"
+        });
+    }
+
+    $self->maybe_send_reply($flattened_response);
 
     return;
 }
@@ -486,8 +503,8 @@ sub send_reply {
 
     my $content = '';
     unless (Plack::Util::status_with_no_entity_body($response->[0])) {
-        Plack::Util::foreach($response->[2],
-                             sub{$content.=shift});
+        # pre-flattened, see L</process_the_message>
+        $content = $response->[2];
     }
 
     my %reply_hh = ();
