@@ -31,12 +31,14 @@ package Plack::Handler::Stomp::Exceptions;
   $Plack::Handler::Stomp::Exceptions::UnknownFrame::DIST = 'Plack-Handler-Stomp';
 }
  use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use namespace::autoclean;
  has frame => ( is => 'ro', required => 1 );
 
  sub as_string {
      sprintf q{Received a STOMP frame we don't know how to handle (%s)},
          shift->frame->command;
  }
+ __PACKAGE__->meta->make_immutable;
 }
 
 {package Plack::Handler::Stomp::Exceptions::AppError;
@@ -47,12 +49,14 @@ package Plack::Handler::Stomp::Exceptions;
   $Plack::Handler::Stomp::Exceptions::AppError::DIST = 'Plack-Handler-Stomp';
 }
  use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use namespace::autoclean;
  has '+previous_exception' => (
      init_arg => 'app_error',
  );
  sub as_string {
      return 'The application died:'.$_[0]->previous_exception;
  }
+ __PACKAGE__->meta->make_immutable;
 }
 
 {package Plack::Handler::Stomp::Exceptions::Stomp;
@@ -63,12 +67,14 @@ package Plack::Handler::Stomp::Exceptions;
   $Plack::Handler::Stomp::Exceptions::Stomp::DIST = 'Plack-Handler-Stomp';
 }
  use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use namespace::autoclean;
  has '+previous_exception' => (
      init_arg => 'stomp_error',
  );
  sub as_string {
      return 'STOMP protocol/network error:'.$_[0]->previous_exception;
  }
+ __PACKAGE__->meta->make_immutable;
 }
 
 {package Plack::Handler::Stomp::Exceptions::OneShot;
@@ -78,7 +84,9 @@ package Plack::Handler::Stomp::Exceptions;
 {
   $Plack::Handler::Stomp::Exceptions::OneShot::DIST = 'Plack-Handler-Stomp';
 }
+ use namespace::autoclean;
  use Moose;with 'Throwable';
+ __PACKAGE__->meta->make_immutable;
 }
 
 1;

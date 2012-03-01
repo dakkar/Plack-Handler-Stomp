@@ -27,7 +27,6 @@ my %WriteMakefileArgs = (
   "LICENSE" => "perl",
   "NAME" => "Plack::Handler::Stomp",
   "PREREQ_PM" => {
-    "HTTP::Request" => 0,
     "Moose" => 0,
     "Moose::Role" => 0,
     "Moose::Util::TypeConstraints" => 0,

@@ -22,7 +22,6 @@ no_index:
   directory:
     - t/lib
 requires:
-  HTTP::Request: 0
   Moose: 0
   Moose::Role: 0
   Moose::Util::TypeConstraints: 0

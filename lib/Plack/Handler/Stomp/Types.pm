@@ -18,6 +18,7 @@ use MooseX::Types -declare =>
 use MooseX::Types::Moose qw(Bool Str Value Int ArrayRef HashRef CodeRef);
 use MooseX::Types::Structured qw(Dict Optional Map);
 use MooseX::Types::Common::String qw(NonEmptySimpleStr);
+use namespace::autoclean;
 
 # ABSTRACT: type definitions for Plack::Handler::Stomp
 

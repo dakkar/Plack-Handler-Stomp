@@ -6,8 +6,6 @@ package Plack::Handler::Stomp;
   $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
 }
 use Moose;
-use HTTP::Request;
-use Net::Stomp;
 use MooseX::Types::Moose qw(Bool CodeRef);
 use Plack::Handler::Stomp::Types qw(NetStompish Logger
                                     ServerConfigList
@@ -46,7 +44,12 @@ has connection => (
 has connection_builder => (
     is => 'rw',
     isa => CodeRef,
-    default => sub { sub { Net::Stomp->new($_[0]) } },
+    default => sub {
+        sub {
+            require Net::Stomp;
+            Net::Stomp->new($_[0]);
+        }
+    },
 );
 
 sub _build_connection {
@@ -462,6 +465,8 @@ sub build_psgi_env {
 
     return $env;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;
 
