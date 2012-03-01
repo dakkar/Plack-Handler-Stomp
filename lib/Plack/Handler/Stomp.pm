@@ -484,7 +484,8 @@ sub maybe_send_reply {
 
 =method C<where_should_send_reply>
 
-Returns the header C<X-STOMP-Reply-Address> header from the response.
+Returns the header C<X-Reply-Address> or C<X-STOMP-Reply-Address>
+header from the response.
 
 =cut
 
@@ -492,7 +493,9 @@ sub where_should_send_reply {
     my ($self, $response) = @_;
 
     return Plack::Util::header_get($response->[1],
-                                   'X-STOMP-Reply-Address');
+                                   'X-Reply-Address')
+        || Plack::Util::header_get($response->[1],
+                                   'X-STOMP-Reply-Address')
 }
 
 =method C<send_reply>
@@ -520,6 +523,7 @@ sub send_reply {
     while (my ($k,$v) = splice @{$response->[1]},0,2) {
         $k=lc($k);
         next if $k eq 'x-stomp-reply-address';
+        next if $k eq 'x-reply-address';
         next unless $k =~ s{^x-stomp-}{};
 
         $reply_hh{lc($k)} = $v;
