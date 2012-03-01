@@ -439,6 +439,7 @@ sub build_psgi_env {
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
         HTTP_CONTENT_LENGTH => length($frame->body),
+        HTTP_CONTENT_TYPE => $frame->headers->{'content-type'},
 
         # psgi
         'psgi.version' => [1,0],
