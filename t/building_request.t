@@ -42,6 +42,7 @@ test 'a simple request' => sub {
 
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
+        HTTP_CONTENT_LENGTH => 3,
 
         # psgi
         'psgi.version' => [1,0],

@@ -84,6 +84,7 @@ has constructor_calls => (
     },
 );
 
+
 has connection_calls => (
     is => 'rw',
     isa => ArrayRef[Maybe[HashRef]],
@@ -95,6 +96,7 @@ has connection_calls => (
         clear_connection_calls => 'clear',
     },
 );
+
 
 has disconnection_calls => (
     is => 'rw',
@@ -108,6 +110,7 @@ has disconnection_calls => (
     },
 );
 
+
 has subscription_calls => (
     is => 'rw',
     isa => ArrayRef[Maybe[HashRef]],
@@ -119,6 +122,7 @@ has subscription_calls => (
         clear_subscription_calls => 'clear',
     },
 );
+
 
 has unsubscription_calls => (
     is => 'rw',
@@ -132,6 +136,7 @@ has unsubscription_calls => (
     },
 );
 
+
 has log_messages => (
     is => 'rw',
     isa => ArrayRef,
@@ -142,6 +147,7 @@ has log_messages => (
         clear_log_messages => 'clear',
     },
 );
+
 
 sub setup_handler {
     my ($self) = @_;
@@ -164,6 +170,7 @@ sub setup_handler {
     })
 }
 
+
 sub debug {
     my ($self,@msg) = @_;
     $self->add_log_message(['debug',@msg]);
@@ -180,6 +187,7 @@ sub error {
     my ($self,@msg) = @_;
     $self->add_log_message(['error',@msg]);
 }
+
 
 sub clear_calls_and_queues {
     my ($self) = @_;
@@ -278,7 +286,43 @@ Defaults to an array with a single C<ERROR> frame.
 =head2 C<constructor_calls>
 
 Arrayref of whatever was passed to the
-L<Test::Plack::Handler::Stomp::FakeStomp> constructor.
+L<Test::Plack::Handler::Stomp::FakeStomp> constructor. Can be edited
+via L</queue_constructor_call>, L</constructor_calls_count>,
+L</clear_constructor_calls>.
+
+=head2 C<connection_calls>
+
+Arrayref of whatever was passed to the
+L<Test::Plack::Handler::Stomp::FakeStomp> C<connect> method. Can be
+edited via L</queue_connection_call>, L</connection_calls_count>,
+L</clear_connection_calls>.
+
+=head2 C<disconnection_calls>
+
+Arrayref of whatever was passed to the
+L<Test::Plack::Handler::Stomp::FakeStomp> C<disconnect> method. Can be
+edited via L</queue_disconnection_call>,
+L</disconnection_calls_count>, L</clear_disconnection_calls>.
+
+=head2 C<subscription_calls>
+
+Arrayref of whatever was passed to the
+L<Test::Plack::Handler::Stomp::FakeStomp> C<subscribe> method. Can be
+edited via L</queue_subscription_call>, L</subscription_calls_count>,
+L</clear_subscription_calls>.
+
+=head2 C<unsubscription_calls>
+
+Arrayref of whatever was passed to the
+L<Test::Plack::Handler::Stomp::FakeStomp> C<unsubscribe> method. Can
+be edited via L</queue_unsubscription_call>,
+L</unsubscription_calls_count>, L</clear_unsubscription_calls>.
+
+=head2 C<log_messages>
+
+Arrayref of whatever L<Plack::Handler::Stomp> logs. Each element is a
+pair C<< [ $level, $message ] >>. Can be edited via
+L</add_log_message>, L</log_messages_count>, L</clear_log_messages>.
 
 =head1 METHODS
 
@@ -322,6 +366,104 @@ Returns the number of elements in L</frames_to_receive>.
 =head2 C<clear_frames_to_receive>
 
 Removes all elements from L</frames_to_receive>.
+
+=head2 C<queue_constructor_call>
+
+Adds a hashref to the end of L</constructor_calls>.
+
+=head2 C<constructor_calls_count>
+
+Returns the number of elements in L</constructor_calls>.
+
+=head2 C<clear_constructor_calls>
+
+Removes all elements from L</constructor_calls>.
+
+=head2 C<queue_connection_call>
+
+Adds a hashref to the end of L</connection_calls>.
+
+=head2 C<connection_calls_count>
+
+Returns the number of elements in L</connection_calls>.
+
+=head2 C<clear_connection_calls>
+
+Removes all elements from L</connection_calls>.
+
+=head2 C<queue_disconnection_call>
+
+Adds a hashref to the end of L</disconnection_calls>.
+
+=head2 C<disconnection_calls_count>
+
+Returns the number of elements in L</disconnection_calls>.
+
+=head2 C<clear_disconnection_calls>
+
+Removes all elements from L</disconnection_calls>.
+
+=head2 C<queue_subscription_call>
+
+Adds a hashref to the end of L</subscription_calls>.
+
+=head2 C<subscription_calls_count>
+
+Returns the number of elements in L</subscription_calls>.
+
+=head2 C<clear_subscription_calls>
+
+Removes all elements from L</subscription_calls>.
+
+=head2 C<queue_unsubscription_call>
+
+Adds a hashref to the end of L</unsubscription_calls>.
+
+=head2 C<unsubscription_calls_count>
+
+Returns the number of elements in L</unsubscription_calls>.
+
+=head2 C<clear_unsubscription_calls>
+
+Removes all elements from L</unsubscription_calls>.
+
+=head2 C<add_log_message>
+
+Adds a pair to the end of L</log_messages>.
+
+=head2 C<log_messages_count>
+
+Returns the number of elements in L</log_messages>.
+
+=head2 C<clear_log_messages>
+
+Removes all elements from L</log_messages>.
+
+=head2 C<setup_handler>
+
+Constructs a L<Plack::Handler::Stomp>, setting it up to capture
+logging, passing L</handler_args>, and setting a C<connection_builder>
+that returns a L<Test::Plack::Handler::Stomp::FakeStomp> with all the
+callbacks set to accumulate calls in this object.
+
+=head2 C<debug>
+
+=head2 C<info>
+
+=head2 C<warn>
+
+=head2 C<error>
+
+Logger delegate methods, the handler returned by L</setup_handler>
+uses these to log. These methods accumulate log messages by calling
+L</add_log_message>.
+
+=head2 C<clear_calls_and_queues>
+
+Calls the clearer for all the queue / accumulator attributes
+(L</frames_sent>, L</frames_to_receive>, L</constructor_calls>,
+L</connection_calls>, L</disconnection_calls>, L</subscription_calls>,
+L</unsubscription_calls>, L</log_messages>)
 
 =head1 AUTHOR
 

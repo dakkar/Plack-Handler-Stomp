@@ -23,13 +23,13 @@ sub info { }
 
 sub warn {
     my ($self,@msg) = @_;
-    warn "@msg\n";
+    CORE::warn "@msg\n";
 }
 
 
 sub error {
     my ($self,@msg) = @_;
-    warn "@msg\n";
+    CORE::warn "@msg\n";
 }
 
 1;
