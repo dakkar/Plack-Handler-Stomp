@@ -4,10 +4,12 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester';
+use Test::Plack::Handler::Stomp;
 
 test 'connecting with supplied params' => sub {
     my ($self) = @_;
+
+    my $t = Test::Plack::Handler::Stomp->new();
 
     my $new_params = {
         hostname => 'foo',
@@ -18,7 +20,7 @@ test 'connecting with supplied params' => sub {
         password => 'mypass',
     };
 
-    $self->set_arg(
+    $t->set_arg(
         servers => [
             {
                 %$new_params,
@@ -27,14 +29,14 @@ test 'connecting with supplied params' => sub {
         ],
     );
 
-    $self->handler->run();
+    $t->handler->run();
 
-    is($self->constructor_calls_count,1,'built once');
-    my $call = $self->constructor_calls->[0];
+    is($t->constructor_calls_count,1,'built once');
+    my $call = $t->constructor_calls->[0];
     is_deeply($call,$new_params,'custom host used');
 
-    is($self->connection_calls_count,1,'connected once');
-    $call = $self->connection_calls->[0];
+    is($t->connection_calls_count,1,'connected once');
+    $call = $t->connection_calls->[0];
     is_deeply($call,$conn_head,'custom connect headers used');
 };
 

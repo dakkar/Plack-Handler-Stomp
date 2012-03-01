@@ -1,11 +1,21 @@
-package HandlerTester;
-use Moose::Role;
+package Test::Plack::Handler::Stomp;
+{
+  $Test::Plack::Handler::Stomp::VERSION = '0.001_01';
+}
+{
+  $Test::Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
+}
+use Moose;
 use Moose::Util::TypeConstraints 'class_type';
 use MooseX::Types::Moose qw(ArrayRef HashRef Maybe);
 
 use namespace::autoclean;
-use FakeStomp;
+use Test::Plack::Handler::Stomp::FakeStomp;
 use Plack::Handler::Stomp;
+
+# ABSTRACT: testing library for Plack::Handler::Stomp
+
+
 
 has handler_args => (
     is => 'ro',
@@ -19,12 +29,15 @@ has handler_args => (
     },
 );
 
+
 has handler => (
     is => 'ro',
     isa => class_type('Plack::Handler::Stomp'),
     lazy => 1,
     builder => 'setup_handler',
+    clearer => 'clear_handler',
 );
+
 
 has frames_sent => (
     is => 'rw',
@@ -37,6 +50,7 @@ has frames_sent => (
         clear_sent_frames => 'clear',
     }
 );
+
 
 has frames_to_receive => (
     is => 'rw',
@@ -56,6 +70,7 @@ has frames_to_receive => (
         clear_frames_to_receive => 'clear',
     },
 );
+
 
 has constructor_calls => (
     is => 'rw',
@@ -136,7 +151,7 @@ sub setup_handler {
         %{$self->handler_args},
         connection_builder => sub {
             my ($params) = @_;
-            return FakeStomp->new({
+            return Test::Plack::Handler::Stomp::FakeStomp->new({
                 new => sub { $self->queue_constructor_call(shift) },
                 connect => sub { $self->queue_connection_call(shift) },
                 disconnect => sub { $self->queue_disconnection_call(shift) },
@@ -180,3 +195,144 @@ sub clear_calls_and_queues {
 }
 
 1;
+
+__END__
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+Test::Plack::Handler::Stomp - testing library for Plack::Handler::Stomp
+
+=head1 VERSION
+
+version 0.001_01
+
+=head1 SYNOPSIS
+
+  my $t = Test::Plack::Handler::Stomp->new();
+  $t->set_arg(
+    subscriptions => [
+      { destination => '/queue/input_queue',
+        path_info => '/input_queue', },
+    ],
+  );
+  $t->clear_frames_to_receive;
+
+  $t->queue_frame_to_receive(Net::Stomp::Frame->new({
+        command => 'MESSAGE',
+        headers => {
+            destination => '/queue/input_queue',
+            subscription => 0,
+            type => 'my_type',
+            'message-id' => 356,
+        },
+        body => '{"foo":"bar"}',
+    }));
+
+    $t->handler->run($app);
+
+    check($t->frames_sent);
+
+=head1 DESCRIPTION
+
+Testing a PSGI application that expects JMS/STOMP messages can be a
+pain. This library helps reduce that pain.
+
+It wraps a L<Plack::Handler::Stomp>, connecting it to a
+L<Test::Plack::Handler::Stomp::FakeStomp> instead of a real STOMP
+connection, and allows you to inspect everything that happens to the
+connection.
+
+=head1 ATTRIBUTES
+
+=head2 C<handler_args>
+
+Hashref, arguments to pass to L<Plack::Handler::Stomp>'s
+constructor. You can add to this via the L</set_arg> method. Defaults
+to C<< { one_shot => 1 } >>, to avoid having L<Plack::Handler::Stomp>
+loop forever.
+
+=head2 C<handler>
+
+A L<Plack::Handler::Stomp> instance. It's built on-demand via
+L</setup_handler>. You can clear it with L</clear_handler> to have it
+rebuilt (for example, if you have changed L</handler_args>)
+
+=head2 C<frames_sent>
+
+Arrayref of L<Net::Stomp::Frame> objects that L<Plack::Handler::Stomp>
+sent. Can be edited via L</queue_sent_frame>, L</sent_frames_count>,
+L</clear_sent_frames>. Defaults to the empty array.
+
+=head2 C<frames_to_receive>
+
+Arrayref of L<Net::Stomp::Frame> objects that L<Plack::Handler::Stomp>
+will consume. Can be edited via L</queue_frame_to_receive>,
+L</next_frame_to_receive>, L</frames_left_to_receive>,
+L</clear_frames_to_receive>.
+
+Defaults to an array with a single C<ERROR> frame.
+
+=head2 C<constructor_calls>
+
+Arrayref of whatever was passed to the
+L<Test::Plack::Handler::Stomp::FakeStomp> constructor.
+
+=head1 METHODS
+
+=head2 C<set_arg>
+
+  $handler->set_arg(foo=>'bar',some=>'thing');
+
+Sets arguments for L<Plack::Handler::Stomp>'s constructor, see
+C</handler_args>.
+
+=head2 C<clear_handler>
+
+Destroys the L</handler>, forcing it to be rebuilt next time it's
+needed.
+
+=head2 C<queue_sent_frame>
+
+Adds a frame to the end of L</frames_sent>.
+
+=head2 C<sent_frames_count>
+
+Returns the number of elements in L</frames_sent>.
+
+=head2 C<clear_sent_frames>
+
+Removes all elements from L</frames_sent>.
+
+=head2 C<queue_frame_to_receive>
+
+Adds a frame to the end of L</frames_to_receive>.
+
+=head2 C<next_frame_to_receive>
+
+Removes a frame from the beginning of L</frames_to_receive> and
+returns it.
+
+=head2 C<frames_left_to_receive>
+
+Returns the number of elements in L</frames_to_receive>.
+
+=head2 C<clear_frames_to_receive>
+
+Removes all elements from L</frames_to_receive>.
+
+=head1 AUTHOR
+
+Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Net-a-porter.com.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

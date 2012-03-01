@@ -222,9 +222,7 @@ sub handle_stomp_message {
 
     my $env = $self->build_psgi_env($frame);
     try {
-        my $response = $app->($env);
-
-        $self->maybe_send_reply($response);
+        $self->process_the_message($app,$env);
 
         $self->connection->ack({ frame => $frame });
     } catch {
@@ -232,6 +230,50 @@ sub handle_stomp_message {
             app_error => $_
         });
     };
+}
+
+
+sub process_the_message {
+    my ($self,$app,$env) = @_;
+
+    my $res = $app->($env);
+
+    my $flattened_response=[];
+    my $cb = sub { $flattened_response->[2].=$_[0] };
+
+    my $response_handler = sub {
+        my ($response) = @_;
+
+        $flattened_response->[0]=$response->[0];
+        $flattened_response->[1]=$response->[1];
+
+        my $body=$response->[2];
+        if (defined $body) {
+            Plack::Util::foreach($body, $cb);
+        }
+        else {
+            return Plack::Util::inline_object(
+                write => $cb,
+                close => sub { },
+            );
+        }
+    };
+
+    if (ref $res eq 'ARRAY') {
+        $response_handler->($res);
+    }
+    elsif (ref $res eq 'CODE') {
+        $res->($response_handler);
+    }
+    else {
+        Plack::Handler::Stomp::Exceptions::AppError->throw({
+            app_error => "Bad response $res"
+        });
+    }
+
+    $self->maybe_send_reply($flattened_response);
+
+    return;
 }
 
 
@@ -270,8 +312,8 @@ sub send_reply {
 
     my $content = '';
     unless (Plack::Util::status_with_no_entity_body($response->[0])) {
-        Plack::Util::foreach($response->[2],
-                             sub{$content.=shift});
+        # pre-flattened, see L</process_the_message>
+        $content = $response->[2];
     }
 
     my %reply_hh = ();
@@ -370,6 +412,8 @@ sub build_psgi_env {
     }
     $path_info ||= $destination; # should not really be needed
 
+    use bytes;
+
     my $env = {
         # server
         SERVER_NAME => 'localhost',
@@ -388,6 +432,7 @@ sub build_psgi_env {
 
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
+        HTTP_CONTENT_LENGTH => length($frame->body),
 
         # psgi
         'psgi.version' => [1,0],
@@ -396,7 +441,7 @@ sub build_psgi_env {
         'psgi.multiprocess' => 0,
         'psgi.run_once' => 0,
         'psgi.nonblocking' => 0,
-        'psgi.streaming' => 0,
+        'psgi.streaming' => 1,
         'psgi.input' => do {
             open my $input, '<', \($frame->body);
             $input;
@@ -408,7 +453,7 @@ sub build_psgi_env {
 
     if ($frame->headers) {
         for my $header (keys %{$frame->headers}) {
-            $env->{"stomp.$header"} = $frame->headers->{$header};
+            $env->{"jms.$header"} = $frame->headers->{$header};
         }
     }
 
@@ -585,8 +630,15 @@ Logs the error via the L</logger>, level C<warn>.
 Calls L</build_psgi_env> to convert the STOMP message into a PSGI
 environment.
 
-The application is then invoked on this environment, any response is
-sent back via L</maybe_send_reply>, and the frame is acknowledged.
+The environment is then passed to L</process_the_message>, and the
+frame is acknowledged.
+
+=head2 C<process_the_message>
+
+Runs a PSGI environment through the application, then flattens the
+response body into a simple string.
+
+The response so flattened is sent back via L</maybe_send_reply>.
 
 =head2 C<handle_stomp_receipt>
 
@@ -662,7 +714,7 @@ Builds a PSGI environment from the message, like:
   'psgi.multiprocess' => 0,
   'psgi.run_once' => 0,
   'psgi.nonblocking' => 0,
-  'psgi.streaming' => 0,
+  'psgi.streaming' => 1,
 
 In addition, reading from C<psgi.input> will return the message body,
 and writing to C<psgi.errors> will log via the L</logger> at level

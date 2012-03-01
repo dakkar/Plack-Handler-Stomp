@@ -4,21 +4,28 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester';
+use Test::Plack::Handler::Stomp;
+
+has t => (
+    is => 'rw',
+    default => sub { Test::Plack::Handler::Stomp->new() }
+);
 
 test 'instantiate the handler' => sub {
     my ($self) = @_;
 
-    ok($self->handler,'built');
+    ok($self->t->handler,'built');
 };
 
 test 'connecting with defaults' => sub {
     my ($self) = @_;
 
-    $self->handler->run();
+    my $t=$self->t;
 
-    is($self->constructor_calls_count,1,'built once');
-    my $call = $self->constructor_calls->[0];
+    $t->handler->run();
+
+    is($t->constructor_calls_count,1,'built once');
+    my $call = $t->constructor_calls->[0];
     is_deeply($call,
               {
                   hostname => 'localhost',
@@ -26,8 +33,8 @@ test 'connecting with defaults' => sub {
               },
               'default parameters');
 
-    is($self->connection_calls_count,1,'connected once');
-    $call = $self->connection_calls->[0];
+    is($t->connection_calls_count,1,'connected once');
+    $call = $t->connection_calls->[0];
     is_deeply($call,{},'no connection headers');
 };
 

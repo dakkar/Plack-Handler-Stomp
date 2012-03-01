@@ -3,20 +3,28 @@ use lib 't/lib';
 use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
-with 'HandlerTester','TestApp';
+use Test::Plack::Handler::Stomp;
+with 'TestApp';
+
+has t => (
+    is => 'rw',
+    default => sub { Test::Plack::Handler::Stomp->new() }
+);
 
 before run_test => sub {
     my ($self) = @_;
 
-    $self->clear_calls_and_queues;
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    my $t = $self->t;
+
+    $t->clear_calls_and_queues;
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing',
         },
         body => 'foo',
     }));
-    $self->set_arg(
+    $t->set_arg(
         subscriptions => [
             {
                 destination => '/queue/testing',
@@ -33,45 +41,49 @@ before run_test => sub {
 test 'two servers, first one dies on connection' => sub {
     my ($self) = @_;
 
-    $self->handler->clear_connection;
-    $self->handler->connection->{__fakestomp__callbacks}{connect} = sub {
+    my $t = $self->t;
+
+    $t->handler->clear_connection;
+    $t->handler->connection->{__fakestomp__callbacks}{connect} = sub {
         my $args = shift;
-        $self->queue_connection_call($args);
+        $t->queue_connection_call($args);
         die "Can't connect\n"
-            if $self->handler->current_server->{hostname} eq 'first';
+            if $t->handler->current_server->{hostname} eq 'first';
     };
 
-    $self->handler->run($self->psgi_test_app);
-    is($self->connection_calls_count,2,
+    $t->handler->run($self->psgi_test_app);
+    is($t->connection_calls_count,2,
        'connected twice');
-    is($self->subscription_calls_count,1,
+    is($t->subscription_calls_count,1,
        'subscribed once');
-    is($self->frames_left_to_receive,0,
+    is($t->frames_left_to_receive,0,
        'message consumed');
-    is($self->sent_frames_count,1,
+    is($t->sent_frames_count,1,
        'message ACKed');
 };
 
 test 'two servers, first one dies on subscribe' => sub {
     my ($self) = @_;
 
-    $self->handler->clear_connection;
-    $self->handler->connection->{__fakestomp__callbacks}{subscribe} = sub {
+    my $t = $self->t;
+
+    $t->handler->clear_connection;
+    $t->handler->connection->{__fakestomp__callbacks}{subscribe} = sub {
         my $args = shift;
-        $self->queue_subscription_call($args);
+        $t->queue_subscription_call($args);
         die "Can't subscribe\n"
-            if $self->handler->current_server->{hostname} eq 'first';
+            if $t->handler->current_server->{hostname} eq 'first';
     };
 
-    $self->handler->run($self->psgi_test_app);
+    $t->handler->run($self->psgi_test_app);
 
-    is($self->connection_calls_count,2,
+    is($t->connection_calls_count,2,
        'connected twice');
-    is($self->subscription_calls_count,2,
+    is($t->subscription_calls_count,2,
        'subscribed twice');
-    is($self->frames_left_to_receive,0,
+    is($t->frames_left_to_receive,0,
        'message consumed');
-    is($self->sent_frames_count,1,
+    is($t->sent_frames_count,1,
        'message ACKed');
 };
 

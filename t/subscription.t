@@ -4,12 +4,14 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester';
+use Test::Plack::Handler::Stomp;
 
 test 'subscriptions with headers' => sub {
     my ($self) = @_;
 
-    $self->set_arg(
+    my $t = Test::Plack::Handler::Stomp->new();
+
+    $t->set_arg(
         servers => [
             {
                 hostname => 'foo',
@@ -51,9 +53,9 @@ test 'subscriptions with headers' => sub {
         },
     );
 
-    $self->handler->run();
+    $t->handler->run();
 
-    is_deeply($self->subscription_calls,
+    is_deeply($t->subscription_calls,
               \@expected,
               'subscribed correctly');
 };

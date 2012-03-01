@@ -4,13 +4,16 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use Net::Stomp::Frame;
-with 'HandlerTester','TestApp';
+use Test::Plack::Handler::Stomp;
+with 'TestApp';
 
 test 'a simple request' => sub {
     my ($self) = @_;
 
-    $self->clear_frames_to_receive;
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    my $t = Test::Plack::Handler::Stomp->new();
+
+    $t->clear_frames_to_receive;
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing',
@@ -20,7 +23,7 @@ test 'a simple request' => sub {
         },
         body => 'foo',
     }));
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/testing-wrong-on-purpose',
@@ -29,7 +32,7 @@ test 'a simple request' => sub {
         },
         body => 'foo',
     }));
-    $self->queue_frame_to_receive(Net::Stomp::Frame->new({
+    $t->queue_frame_to_receive(Net::Stomp::Frame->new({
         command => 'MESSAGE',
         headers => {
             destination => '/queue/%{subscription}', # let's trick it
@@ -40,7 +43,7 @@ test 'a simple request' => sub {
         body => 'foo',
     }));
 
-    $self->set_arg(
+    $t->set_arg(
         subscriptions => [
             {
                 destination => '/queue/testing',
@@ -54,17 +57,17 @@ test 'a simple request' => sub {
         servers => { hostname => 'first', port => 61613 },
     );
 
-    $self->handler->run($self->psgi_test_app);
+    $t->handler->run($self->psgi_test_app);
     my $req = $self->requests_received->[-1];
     is($req->{PATH_INFO},'/first/queue/testing/2/foo-message/complicated',
        'complex path mapped');
 
-    $self->handler->run($self->psgi_test_app);
+    $t->handler->run($self->psgi_test_app);
     $req = $self->requests_received->[-1];
     is($req->{PATH_INFO},'/first/queue/testing-wrong-on-purpose/0/bar-message/',
        'complex path mapped');
 
-    $self->handler->run($self->psgi_test_app);
+    $t->handler->run($self->psgi_test_app);
     $req = $self->requests_received->[-1];
     is($req->{PATH_INFO},'/plain/path',
        'no complex path mapping');

@@ -29,6 +29,7 @@
             "HTTP::Request" : "0",
             "Moose" : "0",
             "Moose::Role" : "0",
+            "Moose::Util::TypeConstraints" : "0",
             "MooseX::Types" : "0",
             "MooseX::Types::Common::Numeric" : "0",
             "MooseX::Types::Common::String" : "0",
@@ -39,8 +40,10 @@
             "Sub::Exporter" : "0",
             "Throwable" : "0",
             "Try::Tiny" : "0",
+            "bytes" : "0",
             "namespace::autoclean" : "0",
             "overload" : "0",
+            "parent" : "0",
             "strict" : "0",
             "warnings" : "0"
          }
@@ -49,12 +52,10 @@
          "requires" : {
             "Alien::ActiveMQ" : "0",
             "JSON::XS" : "0",
-            "Moose::Util::TypeConstraints" : "0",
             "Net::Stomp::Frame" : "0",
             "Test::More" : "0",
             "Test::Routine" : "0",
-            "Test::Routine::Util" : "0",
-            "parent" : "0"
+            "Test::Routine::Util" : "0"
          }
       }
    },
