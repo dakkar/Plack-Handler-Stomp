@@ -454,4 +454,6 @@ sub clear_calls_and_queues {
     return;
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;

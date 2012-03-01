@@ -140,4 +140,6 @@ sub receive_frame {
     return $self->{__fakestomp__callbacks}{receive_frame}->($conf);
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
