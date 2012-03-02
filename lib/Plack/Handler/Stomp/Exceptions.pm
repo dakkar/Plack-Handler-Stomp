@@ -1,4 +1,5 @@
 package Plack::Handler::Stomp::Exceptions;
+use Net::Stomp::MooseHelpers::Exceptions;
 
 # ABSTRACT: exception classes for Plack::Handler::Stomp
 
@@ -18,12 +19,6 @@ C<frame> attribute containing the frame in question.
 Thrown whenever the PSGI application dies; has a C<previous_exception>
 attribute containing the exception that the application threw.
 
-=item C<Plack::Handler::Stomp::Exceptions::Stomp>
-
-Thrown whenever the STOMP library (usually L<Net::Stomp>) dies; has a
-C<previous_exception> attribute containing the exception that the
-library threw.
-
 =item C<Plack::Handler::Stomp::Exceptions::OneShot>
 
 Thrown to stop the C<run> loop after receiving a message, if
@@ -33,16 +28,8 @@ C<one_shot> is true (see L<Plack::Handler::Stomp/run>).
 
 =cut
 
-{package Plack::Handler::Stomp::Exceptions::Stringy;
- use Moose::Role;
- use overload
-  q{""}    => 'as_string',
-  fallback => 1;
- requires 'as_string';
-}
-
 {package Plack::Handler::Stomp::Exceptions::UnknownFrame;
- use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
  use namespace::autoclean;
  has frame => ( is => 'ro', required => 1 );
 
@@ -54,25 +41,13 @@ C<one_shot> is true (see L<Plack::Handler::Stomp/run>).
 }
 
 {package Plack::Handler::Stomp::Exceptions::AppError;
- use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
  use namespace::autoclean;
  has '+previous_exception' => (
      init_arg => 'app_error',
  );
  sub as_string {
      return 'The application died:'.$_[0]->previous_exception;
- }
- __PACKAGE__->meta->make_immutable;
-}
-
-{package Plack::Handler::Stomp::Exceptions::Stomp;
- use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
- use namespace::autoclean;
- has '+previous_exception' => (
-     init_arg => 'stomp_error',
- );
- sub as_string {
-     return 'STOMP protocol/network error:'.$_[0]->previous_exception;
  }
  __PACKAGE__->meta->make_immutable;
 }
