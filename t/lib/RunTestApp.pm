@@ -5,6 +5,8 @@ use Alien::ActiveMQ;
 use Plack::Handler::Stomp;
 use BrokerTestApp;
 use Test::More;
+use Moose::Util 'apply_all_roles';
+use File::Temp 'tempdir';
 
 my $mq;
 
@@ -52,9 +54,19 @@ has child => (
     lazy_build => 1,
 );
 
+has trace_dir => (
+    is => 'ro',
+    lazy_build => 1,
+);
+sub _build_trace_dir {
+    return tempdir(CLEANUP => ( $ENV{TEST_VERBOSE} ? 0 : 1 ));
+}
+
 sub _build_child {
     my ($self) = @_;
 
+    my $trace_dir = $self->trace_dir; # make sure we don't get two
+                                      # values across the fork
     my $pid = fork();
     if ($pid == 0) {
         my $runner = Plack::Handler::Stomp->new({
@@ -73,6 +85,9 @@ sub _build_child {
                   path_info => '/topic/ch2', },
             ],
         });
+        apply_all_roles($runner,'Net::Stomp::MooseHelpers::TraceStomp');
+        $runner->trace_basedir($trace_dir);
+        $runner->trace(1);
         $runner->run(BrokerTestApp->get_app());
 
         sleep 2;
