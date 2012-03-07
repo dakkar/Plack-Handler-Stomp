@@ -134,14 +134,7 @@ sub run {
             $self->connect();
             $self->subscribe();
 
-            FRAME_LOOP:
-            while (1) {
-                my $frame = $self->connection->receive_frame();
-                $self->handle_stomp_frame($app, $frame);
-
-                Plack::Handler::Stomp::Exceptions::OneShot->throw()
-                      if $self->one_shot;
-            }
+            $self->frame_loop($app);
         } catch {
             $exception = $_;
         };
@@ -163,6 +156,18 @@ sub run {
                 die $exception;
             }
         }
+    }
+}
+
+sub frame_loop {
+    my ($self,$app) = @_;
+
+    while (1) {
+        my $frame = $self->connection->receive_frame();
+        $self->handle_stomp_frame($app, $frame);
+
+        Plack::Handler::Stomp::Exceptions::OneShot->throw()
+              if $self->one_shot;
     }
 }
 
