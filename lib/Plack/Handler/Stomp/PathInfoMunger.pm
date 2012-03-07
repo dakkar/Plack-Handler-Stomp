@@ -23,11 +23,11 @@ the C<$stomp_frame>. In particular:
 
 =over 4
 
-=item C<%{broker_hostname}>
+=item C<%{broker.hostname}>
 
 is replaced by the value of C<< $server_config->{hostname} >>
 
-=item C<%{broker_port}>
+=item C<%{broker.port}>
 
 is replaced by the value of C<< $server_config->{port} >>
 
@@ -50,10 +50,10 @@ sub munge_path_info {
 
     my $lookup = sub {
         my $key = shift;
-        if ($key eq 'broker_hostname') {
+        if ($key eq 'broker.hostname') {
             return $server->{hostname}
         }
-        if ($key eq 'broker_port') {
+        if ($key eq 'broker.port') {
             return $server->{port}
         }
         $key =~ s{^header\.}{};

@@ -47,7 +47,7 @@ test 'a simple request' => sub {
         subscriptions => [
             {
                 destination => '/queue/testing',
-                path_info => '/%{broker_hostname}%{destination}/%{subscription}/%{JMSType}/%{header.broker_hostname}',
+                path_info => '/%{broker.hostname}%{destination}/%{subscription}/%{JMSType}/%{header.broker_hostname}',
             },
             {
                 destination => '/queue/%{subscription}',
