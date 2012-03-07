@@ -48,7 +48,8 @@ usable by any PSGI application.
 =head2 Roles Consumed
 
 We consume L<Net::Stomp::MooseHelpers::CanConnect> and
-L<Net::Stomp::MooseHelpers::CanSubscribe>.
+L<Net::Stomp::MooseHelpers::CanSubscribe>. Read those modules'
+documentation to see how to configure servers and subscriptions.
 
 =attr C<logger>
 
@@ -103,21 +104,29 @@ Given a PSGI application, loops forever:
 
 =item *
 
-connect to a STOMP server (see L</connect> and L</servers>)
+connect to a STOMP server (see
+L<connect|Net::Stomp::MooseHelpers::CanConnect/connect> and
+L<servers|Net::Stomp::MooseHelpers::CanConnect/servers> in
+L<Net::Stomp::MooseHelpers::CanConnect>)
 
 =item *
 
-subscribe to whatever needed (see L</subscribe> and L</subscriptions>)
+subscribe to whatever needed (see
+L<subscribe|Net::Stomp::MooseHelpers::CanSubscribe/subscribe> and
+L<subscriptions|Net::Stomp::MooseHelpers::CanSubscribe/subscriptions>
+in L<Net::Stomp::MooseHelpers::CanSubscribe>)
 
 =item *
 
-consume STOMP frames in an inner loop (see L</handle_stomp_frame>)
+consume STOMP frames in an inner loop (see L</frame_loop>)
 
 =back
 
 If the application throws an exception, the loop exits re-throwing the
 exception. If the STOMP connection has problems, the outer loop is
-repeated with a different server (see L</next_server>).
+repeated with a different server (see
+L<next_server|Net::Stomp::MooseHelpers::CanConnect/next_server> in
+L<Net::Stomp::MooseHelpers::CanConnect>).
 
 If L</one_shot> is set, this function exits after having consumed
 exactly 1 frame.
@@ -158,6 +167,16 @@ sub run {
         }
     }
 }
+
+=method C<frame_loop>
+
+Loop forever receiving frames from the STOMP connection. Call
+L</handle_stomp_frame> for each frame.
+
+If L</one_shot> is set, this function exits after having consumed
+exactly 1 frame.
+
+=cut
 
 sub frame_loop {
     my ($self,$app) = @_;
@@ -320,8 +339,8 @@ sub maybe_send_reply {
 
 =method C<where_should_send_reply>
 
-Returns the header C<X-Reply-Address> or C<X-STOMP-Reply-Address>
-header from the response.
+Returns the header C<X-Reply-Address> or C<X-STOMP-Reply-Address> from
+the response.
 
 =cut
 
@@ -336,11 +355,11 @@ sub where_should_send_reply {
 
 =method C<send_reply>
 
-Converts the PSGI response into a STOMP frame, by removing every
-header not starting with C<x-stomp->, removing that prefix from the
-other headers, and stringifying the body.
+Converts the PSGI response into a STOMP frame, by removing the prefix
+C<x-stomp-> from the key of header fields that have it, removing
+entirely header fields that don't, and stringifying the body.
 
-Then sends the frame so built as the reply.
+Then sends the frame.
 
 =cut
 
@@ -434,8 +453,8 @@ and writing to C<psgi.errors> will log via the L</logger> at level
 C<error>.
 
 Finally, every header in the STOMP message will be available in the
-"namespace" C<stomp.>, so for example the message type is in
-C<stomp.type>.
+"namespace" C<jms.>, so for example the message type is in
+C<jms.type>.
 
 The C<$path_info> is obtained from the L</destination_path_map>
 (i.e. from the C<path_info> subscription options) passed through
