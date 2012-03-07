@@ -28,34 +28,37 @@ C<one_shot> is true (see L<Plack::Handler::Stomp/run>).
 
 =cut
 
-{package Plack::Handler::Stomp::Exceptions::UnknownFrame;
- use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
- use namespace::autoclean;
- has frame => ( is => 'ro', required => 1 );
+{
+package Plack::Handler::Stomp::Exceptions::UnknownFrame;
+use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
+use namespace::autoclean;
+has frame => ( is => 'ro', required => 1 );
 
- sub as_string {
-     sprintf q{Received a STOMP frame we don't know how to handle (%s)},
-         shift->frame->command;
- }
- __PACKAGE__->meta->make_immutable;
+sub as_string {
+    sprintf q{Received a STOMP frame we don't know how to handle (%s)},
+        shift->frame->command;
+}
+__PACKAGE__->meta->make_immutable;
 }
 
-{package Plack::Handler::Stomp::Exceptions::AppError;
- use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
- use namespace::autoclean;
- has '+previous_exception' => (
-     init_arg => 'app_error',
- );
- sub as_string {
-     return 'The application died:'.$_[0]->previous_exception;
- }
- __PACKAGE__->meta->make_immutable;
+{
+package Plack::Handler::Stomp::Exceptions::AppError;
+use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
+use namespace::autoclean;
+has '+previous_exception' => (
+    init_arg => 'app_error',
+);
+sub as_string {
+    return 'The application died:'.$_[0]->previous_exception;
+}
+__PACKAGE__->meta->make_immutable;
 }
 
-{package Plack::Handler::Stomp::Exceptions::OneShot;
- use namespace::autoclean;
- use Moose;with 'Throwable';
- __PACKAGE__->meta->make_immutable;
+{
+package Plack::Handler::Stomp::Exceptions::OneShot;
+use namespace::autoclean;
+use Moose;with 'Throwable';
+__PACKAGE__->meta->make_immutable;
 }
 
 1;
