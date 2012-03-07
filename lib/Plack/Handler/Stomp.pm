@@ -6,19 +6,18 @@ package Plack::Handler::Stomp;
   $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
 }
 use Moose;
-use MooseX::Types::Moose qw(Bool CodeRef);
-use Plack::Handler::Stomp::Types qw(NetStompish Logger
-                                    ServerConfigList
-                                    SubscriptionConfigList
-                                    Headers
-                                    PathMap
-                               );
+use MooseX::Types::Moose qw(Bool);
+use Plack::Handler::Stomp::Types qw(Logger PathMap);
+use Net::Stomp::MooseHelpers::Types qw(NetStompish);
 use Plack::Handler::Stomp::PathInfoMunger 'munge_path_info';
-use MooseX::Types::Common::Numeric qw(PositiveInt);
 use Plack::Handler::Stomp::Exceptions;
+use Net::Stomp::MooseHelpers::Exceptions;
 use namespace::autoclean;
 use Try::Tiny;
 use Plack::Util;
+
+with 'Net::Stomp::MooseHelpers::CanConnect';
+with 'Net::Stomp::MooseHelpers::CanSubscribe';
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
 
@@ -32,111 +31,6 @@ sub _build_logger {
     require Plack::Handler::Stomp::StupidLogger;
     Plack::Handler::Stomp::StupidLogger->new();
 }
-
-
-has connection => (
-    is => 'rw',
-    isa => NetStompish,
-    lazy_build => 1,
-);
-
-
-has connection_builder => (
-    is => 'rw',
-    isa => CodeRef,
-    default => sub {
-        sub {
-            require Net::Stomp;
-            Net::Stomp->new($_[0]);
-        }
-    },
-);
-
-sub _build_connection {
-    my ($self) = @_;
-
-    my $server = $self->next_server;
-
-    return $self->connection_builder->({
-        hostname => $server->{hostname},
-        port => $server->{port},
-    });
-}
-
-
-has servers => (
-    is => 'ro',
-    isa => ServerConfigList,
-    lazy => 1,
-    coerce => 1,
-    builder => '_default_servers',
-    traits => ['Array'],
-    handles => {
-        _shift_servers => 'shift',
-        _push_servers => 'push',
-    },
-);
-sub _default_servers {
-    [ { hostname => 'localhost', port => 61613 } ]
-};
-
-
-sub next_server {
-    my ($self) = @_;
-
-    my $ret = $self->_shift_servers;
-    $self->_push_servers($ret);
-    return $ret;
-}
-
-
-sub current_server {
-    my ($self) = @_;
-
-    return $self->servers->[-1];
-}
-
-
-has tries_per_server => (
-    is => 'ro',
-    isa => PositiveInt,
-    default => 1,
-);
-
-
-has connect_retry_delay => (
-    is => 'ro',
-    isa => PositiveInt,
-    default => 15,
-);
-
-
-has connect_headers => (
-    is => 'ro',
-    isa => Headers,
-    lazy => 1,
-    builder => '_default_connect_headers',
-);
-sub _default_connect_headers { { } }
-
-
-has subscribe_headers => (
-    is => 'ro',
-    isa => Headers,
-    lazy => 1,
-    builder => '_default_subscribe_headers',
-);
-sub _default_subscribe_headers { { } }
-
-
-has subscriptions => (
-    is => 'ro',
-    isa => SubscriptionConfigList,
-    coerce => 1,
-    lazy => 1,
-    builder => '_default_subscriptions',
-);
-sub _default_subscriptions { [] }
 
 
 has destination_path_map => (
@@ -163,14 +57,7 @@ sub run {
             $self->connect();
             $self->subscribe();
 
-            FRAME_LOOP:
-            while (1) {
-                my $frame = $self->connection->receive_frame();
-                $self->handle_stomp_frame($app, $frame);
-
-                Plack::Handler::Stomp::Exceptions::OneShot->throw()
-                      if $self->one_shot;
-            }
+            $self->frame_loop($app);
         } catch {
             $exception = $_;
         };
@@ -181,7 +68,7 @@ sub run {
             if ($exception->isa('Plack::Handler::Stomp::Exceptions::AppError')) {
                 die $exception;
             }
-            if ($exception->isa('Plack::Handler::Stomp::Exceptions::Stomp')) {
+            if ($exception->isa('Net::Stomp::MooseHelpers::Exceptions::Stomp')) {
                 $self->clear_connection;
                 next SERVER_LOOP;
             }
@@ -192,6 +79,19 @@ sub run {
                 die $exception;
             }
         }
+    }
+}
+
+
+sub frame_loop {
+    my ($self,$app) = @_;
+
+    while (1) {
+        my $frame = $self->connection->receive_frame();
+        $self->handle_stomp_frame($app, $frame);
+
+        Plack::Handler::Stomp::Exceptions::OneShot->throw()
+              if $self->one_shot;
     }
 }
 
@@ -341,61 +241,18 @@ sub send_reply {
 }
 
 
-sub connect {
-    my ($self) = @_;
+after subscribe_single => sub {
+    my ($self,$sub,$headers) = @_;
 
-    try {
-        # the connection will be created by the lazy builder
-        $self->connection; # needed to make sure that 'current_server'
-                           # is the right one
-        my $server = $self->current_server;
-        my %headers = (
-            %{$self->connect_headers},
-            %{$server->{connect_headers} || {}},
-        );
-        $self->connection->connect(\%headers);
-    } catch {
-        Plack::Handler::Stomp::Exceptions::Stomp->throw({
-            stomp_error => $_
-        });
-    };
-}
+    my $destination = $headers->{destination};
+    my $sub_id = $headers->{id};
 
+    $self->destination_path_map->{$destination} =
+        $self->destination_path_map->{"/subscription/$sub_id"} =
+            $sub->{path_info} || $destination;
 
-sub subscribe {
-    my ($self) = @_;
-
-    my %headers = (
-        %{$self->subscribe_headers},
-        %{$self->current_server->{subscribe_headers} || {}},
-    );
-
-    my $sub_id = 0;
-
-    try {
-        for my $sub (@{$self->subscriptions}) {
-            my $destination = $sub->{destination};
-            my $more_headers = $sub->{headers} || {};
-            $self->connection->subscribe({
-                destination => $destination,
-                %headers,
-                %$more_headers,
-                id => $sub_id,
-                ack => 'client',
-            });
-
-            $self->destination_path_map->{$destination} =
-                $self->destination_path_map->{"/subscription/$sub_id"} =
-                    $sub->{path_info} || $destination;
-
-            ++$sub_id;
-        }
-    } catch {
-        Plack::Handler::Stomp::Exceptions::Stomp->throw({
-            stomp_error => $_
-        });
-    };
-}
+    return;
+};
 
 
 sub build_psgi_env {
@@ -514,6 +371,12 @@ those cases, this module is for you.
 This module is inspired by L<Catalyst::Engine::Stomp>, but aims to be
 usable by any PSGI application.
 
+=head2 Roles Consumed
+
+We consume L<Net::Stomp::MooseHelpers::CanConnect> and
+L<Net::Stomp::MooseHelpers::CanSubscribe>. Read those modules'
+documentation to see how to configure servers and subscriptions.
+
 =head1 ATTRIBUTES
 
 =head2 C<logger>
@@ -522,57 +385,6 @@ A logger object used by thes handler. Not to be confused by the logger
 used by the application (either internally, or via a Middleware). Can
 be any object that can C<debug>, C<info>, C<warn>, C<error>. Defaults
 to an instance of L<Plack::Handler::Stomp::StupidLogger>.
-
-=head2 C<connection>
-
-The connection to the STOMP server. It's built using the
-L</connection_builder>, rotating servers via L</next_server>. It's
-usually a L<Net::Stomp> object.
-
-=head2 C<connection_builder>
-
-Coderef that, given a hashref of options, returns a connection. The
-default builder just passes the hashref to the constructor of
-L<Net::Stomp>.
-
-=head2 C<servers>
-
-A L<ServerConfigList|Plack::Handler::Stomp::Types/ServerConfigList>,
-that is, an arrayref of hashrefs, each of which describes how to
-connect to a single server. Defaults to C<< [ { hostname =>
-'localhost', port => 61613 } ] >>.
-
-=head2 C<tries_per_server>
-
-How many times to try to connect to a server before trying the
-L</next_server>. Defaults to 1.
-
-=head2 C<connect_retry_delay>
-
-How many seconds to wait between connection attempts. Defaults to 15.
-
-=head2 C<connect_headers>
-
-Global setting for connection headers (passed to
-L<Net::Stomp/connect>). Can be overridden by the C<connect_headers>
-slot in each element of L</servers>. Defaults to the empty hashref.
-
-=head2 C<subscribe_headers>
-
-Global setting for subscription headers (passed to
-L<Net::Stomp/subscribe>). Can be overridden by the
-C<subscribe_headers> slot in each element of L</servers> and by the
-C<headers> slot in each element fof L</subscriptions>. Defaults to
-the empty hashref.
-
-=head2 C<subscriptions>
-
-A
-L<SubscriptionConfigList|Plack::Handler::Stomp::Types/SubscriptionConfigList>,
-that is, an arrayref of hashrefs, each of which describes a
-subscription. Defaults to the empty arrayref. You should set this
-value to something useful, otherwise your connection will not receive
-any message.
 
 =head2 C<destination_path_map>
 
@@ -586,16 +398,6 @@ defaults to false.
 
 =head1 METHODS
 
-=head2 C<next_server>
-
-Rotates L</servers>, returning the element that was just moved from
-the front to the back.
-
-=head2 C<current_server>
-
-Returns whatever the last call to L</next_server> returned, i.e. the
-last element of L</servers>.
-
 =head2 C<run>
 
 Given a PSGI application, loops forever:
@@ -604,21 +406,37 @@ Given a PSGI application, loops forever:
 
 =item *
 
-connect to a STOMP server (see L</connect> and L</servers>)
+connect to a STOMP server (see
+L<connect|Net::Stomp::MooseHelpers::CanConnect/connect> and
+L<servers|Net::Stomp::MooseHelpers::CanConnect/servers> in
+L<Net::Stomp::MooseHelpers::CanConnect>)
 
 =item *
 
-subscribe to whatever needed (see L</subscribe> and L</subscriptions>)
+subscribe to whatever needed (see
+L<subscribe|Net::Stomp::MooseHelpers::CanSubscribe/subscribe> and
+L<subscriptions|Net::Stomp::MooseHelpers::CanSubscribe/subscriptions>
+in L<Net::Stomp::MooseHelpers::CanSubscribe>)
 
 =item *
 
-consume STOMP frames in an inner loop (see L</handle_stomp_frame>)
+consume STOMP frames in an inner loop (see L</frame_loop>)
 
 =back
 
 If the application throws an exception, the loop exits re-throwing the
 exception. If the STOMP connection has problems, the outer loop is
-repeated with a different server (see L</next_server>).
+repeated with a different server (see
+L<next_server|Net::Stomp::MooseHelpers::CanConnect/next_server> in
+L<Net::Stomp::MooseHelpers::CanConnect>).
+
+If L</one_shot> is set, this function exits after having consumed
+exactly 1 frame.
+
+=head2 C<frame_loop>
+
+Loop forever receiving frames from the STOMP connection. Call
+L</handle_stomp_frame> for each frame.
 
 If L</one_shot> is set, this function exits after having consumed
 exactly 1 frame.
@@ -662,38 +480,25 @@ actually send the reply.
 
 =head2 C<where_should_send_reply>
 
-Returns the header C<X-Reply-Address> or C<X-STOMP-Reply-Address>
-header from the response.
+Returns the header C<X-Reply-Address> or C<X-STOMP-Reply-Address> from
+the response.
 
 =head2 C<send_reply>
 
-Converts the PSGI response into a STOMP frame, by removing every
-header not starting with C<x-stomp->, removing that prefix from the
-other headers, and stringifying the body.
+Converts the PSGI response into a STOMP frame, by removing the prefix
+C<x-stomp-> from the key of header fields that have it, removing
+entirely header fields that don't, and stringifying the body.
 
-Then sends the frame so built as the reply.
+Then sends the frame.
 
-=head2 C<connect>
+=head2 C<subscribe_single>
 
-Call the C<connect> method on L</connection>, passing the generic
-L</connect_headers> and the per-server connect headers (from
-L</current_server>, slot C<connect_headers>). Throws a
-L<Plack::Handler::Stomp::Exceptions::Stomp> if anything goes wrong.
+C<after> modifier on the method provided by
+L<Net::Stomp::MooseHelpers::CanSubscribe>.
 
-=head2 C<subscribe>
-
-Call the C<subscribe> method on L</connection>, passing the generic
-L</subscribe_headers>, the per-server subscribe headers (from
-L</current_server>, slot C<subscribe_headers>) and the
-per-subscription subscribe headers (from L</subscriptions>, slot
-C<headers>).
-
-It also sets the L</destination_path_map> to map the destination and
-the subscription id to the C<path_info> slot of the L</subscriptions>
+It sets the L</destination_path_map> to map the destination and the
+subscription id to the C<path_info> slot of the L</subscriptions>
 element, or to the destination itself if C<path_info> is not defined.
-
-Throws a L<Plack::Handler::Stomp::Exceptions::Stomp> if anything goes
-wrong.
 
 =head2 C<build_psgi_env>
 
@@ -731,8 +536,8 @@ and writing to C<psgi.errors> will log via the L</logger> at level
 C<error>.
 
 Finally, every header in the STOMP message will be available in the
-"namespace" C<stomp.>, so for example the message type is in
-C<stomp.type>.
+"namespace" C<jms.>, so for example the message type is in
+C<jms.type>.
 
 The C<$path_info> is obtained from the L</destination_path_map>
 (i.e. from the C<path_info> subscription options) passed through

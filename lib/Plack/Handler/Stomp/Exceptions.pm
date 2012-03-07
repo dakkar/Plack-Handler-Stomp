@@ -5,23 +5,10 @@ package Plack::Handler::Stomp::Exceptions;
 {
   $Plack::Handler::Stomp::Exceptions::DIST = 'Plack-Handler-Stomp';
 }
+use Net::Stomp::MooseHelpers::Exceptions;
 
 # ABSTRACT: exception classes for Plack::Handler::Stomp
 
-
-{package Plack::Handler::Stomp::Exceptions::Stringy;
-{
-  $Plack::Handler::Stomp::Exceptions::Stringy::VERSION = '0.001_01';
-}
-{
-  $Plack::Handler::Stomp::Exceptions::Stringy::DIST = 'Plack-Handler-Stomp';
-}
- use Moose::Role;
- use overload
-  q{""}    => 'as_string',
-  fallback => 1;
- requires 'as_string';
-}
 
 {package Plack::Handler::Stomp::Exceptions::UnknownFrame;
 {
@@ -30,7 +17,7 @@ package Plack::Handler::Stomp::Exceptions;
 {
   $Plack::Handler::Stomp::Exceptions::UnknownFrame::DIST = 'Plack-Handler-Stomp';
 }
- use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
  use namespace::autoclean;
  has frame => ( is => 'ro', required => 1 );
 
@@ -48,31 +35,13 @@ package Plack::Handler::Stomp::Exceptions;
 {
   $Plack::Handler::Stomp::Exceptions::AppError::DIST = 'Plack-Handler-Stomp';
 }
- use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
+ use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
  use namespace::autoclean;
  has '+previous_exception' => (
      init_arg => 'app_error',
  );
  sub as_string {
      return 'The application died:'.$_[0]->previous_exception;
- }
- __PACKAGE__->meta->make_immutable;
-}
-
-{package Plack::Handler::Stomp::Exceptions::Stomp;
-{
-  $Plack::Handler::Stomp::Exceptions::Stomp::VERSION = '0.001_01';
-}
-{
-  $Plack::Handler::Stomp::Exceptions::Stomp::DIST = 'Plack-Handler-Stomp';
-}
- use Moose;with 'Throwable','Plack::Handler::Stomp::Exceptions::Stringy';
- use namespace::autoclean;
- has '+previous_exception' => (
-     init_arg => 'stomp_error',
- );
- sub as_string {
-     return 'STOMP protocol/network error:'.$_[0]->previous_exception;
  }
  __PACKAGE__->meta->make_immutable;
 }
@@ -119,12 +88,6 @@ C<frame> attribute containing the frame in question.
 
 Thrown whenever the PSGI application dies; has a C<previous_exception>
 attribute containing the exception that the application threw.
-
-=item C<Plack::Handler::Stomp::Exceptions::Stomp>
-
-Thrown whenever the STOMP library (usually L<Net::Stomp>) dies; has a
-C<previous_exception> attribute containing the exception that the
-library threw.
 
 =item C<Plack::Handler::Stomp::Exceptions::OneShot>
 

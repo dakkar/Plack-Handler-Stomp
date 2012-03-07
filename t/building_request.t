@@ -18,6 +18,7 @@ test 'a simple request' => sub {
         headers => {
             destination => '/queue/testing',
             'message-id' => 123,
+            'content-type' => 'json',
         },
         body => 'foo',
     }));
@@ -43,6 +44,7 @@ test 'a simple request' => sub {
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
         HTTP_CONTENT_LENGTH => 3,
+        HTTP_CONTENT_TYPE => 'json',
 
         # psgi
         'psgi.version' => [1,0],
@@ -56,6 +58,7 @@ test 'a simple request' => sub {
         # stomp
         'jms.destination' => '/queue/testing',
         'jms.message-id' => 123,
+        'jms.content-type' => 'json',
 
         # application
         'testapp.body' => 'foo',

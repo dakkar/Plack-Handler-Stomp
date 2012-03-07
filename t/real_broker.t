@@ -4,6 +4,7 @@ use Test::Routine;
 use Test::Routine::Util;
 use MyTesting;
 use JSON::XS;
+use Net::Stomp::MooseHelpers::ReadTrace;
 with 'RunTestApp';
 
 test 'talk to the app' => sub {
@@ -46,27 +47,65 @@ test 'talk to the app' => sub {
         },
     );
 
-    for my $case (@cases) {
-        my $message = {
-            payload => { foo => 1, bar => 2 },
-            reply_to => $reply_to,
-            type => 'testaction',
-        };
+    subtest 'send & reply' => sub {
+        for my $case (@cases) {
+            my $message = {
+                payload => { foo => 1, bar => 2 },
+                reply_to => $reply_to,
+                type => 'testaction',
+            };
 
-        $conn->send( {
-            destination => $case->{destination},
-            body => JSON::XS::encode_json($message),
-            JMSType => $case->{JMSType},
-            custom_header => $case->{custom_header},
-        } );
+            $conn->send( {
+                destination => $case->{destination},
+                body => JSON::XS::encode_json($message),
+                JMSType => $case->{JMSType},
+                custom_header => $case->{custom_header},
+            } );
 
-        my $reply_frame = $conn->receive_frame();
-        ok($reply_frame, 'got a reply');
+            my $reply_frame = $conn->receive_frame();
+            ok($reply_frame, 'got a reply');
 
-        my $response = JSON::XS::decode_json($reply_frame->body);
-        ok($response, 'response ok');
-        ok($response->{path_info} eq $case->{path_info}, 'worked');
-    }
+            my $response = JSON::XS::decode_json($reply_frame->body);
+            ok($response, 'response ok');
+            ok($response->{path_info} eq $case->{path_info}, 'worked');
+        }
+    };
+
+    subtest 'tracing' => sub {
+        my $reader = Net::Stomp::MooseHelpers::ReadTrace->new({
+            trace_basedir => $self->trace_dir,
+        });
+        my @frames = $reader->sorted_frames();
+
+        my @case_comparers = map {
+            my %h=%$_;
+            $h{type}=delete $h{JMSType};
+            my $pi=delete $h{path_info};
+
+            (
+                methods(command=>'MESSAGE',
+                        headers=>superhashof(\%h),
+                    ),
+                methods(command=>'SEND',
+                        headers=>{
+                            destination=>re(qr{^/remote-temp-queue/}),
+                        },
+                        body => re(qr{"path_info":"\Q$pi\E"}),
+                    ),
+                methods(command=>'ACK'),
+            )
+        } @cases;
+
+        cmp_deeply(\@frames,
+                   [
+                       methods(command=>'CONNECT'),
+                       methods(command=>'CONNECTED'),
+                       (methods(command=>'SUBSCRIBE')) x 3,
+                       @case_comparers,
+                   ],
+                   'tracing works'
+               )
+    };
 };
 
 run_me;

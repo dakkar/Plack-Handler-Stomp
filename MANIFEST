@@ -7,6 +7,7 @@ TODO
 dist.ini
 lib/Plack/Handler/Stomp.pm
 lib/Plack/Handler/Stomp/Exceptions.pm
+lib/Plack/Handler/Stomp/NoNetwork.pm
 lib/Plack/Handler/Stomp/PathInfoMunger.pm
 lib/Plack/Handler/Stomp/StupidLogger.pm
 lib/Plack/Handler/Stomp/Types.pm
