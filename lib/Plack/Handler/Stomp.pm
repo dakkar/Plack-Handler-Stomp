@@ -285,7 +285,7 @@ sub build_psgi_env {
 
         # client
         REQUEST_METHOD => 'POST',
-        REQUEST_URI => "stomp://localhost$path_info",
+        REQUEST_URI => $path_info,
         SCRIPT_NAME => '',
         PATH_INFO => $path_info,
         QUERY_STRING => '',
@@ -549,7 +549,7 @@ Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Net-a-porter.com.
+This software is copyright (c) 2012 by Net-a-porter.com.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

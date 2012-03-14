@@ -10,52 +10,55 @@ use Net::Stomp::MooseHelpers::Exceptions;
 # ABSTRACT: exception classes for Plack::Handler::Stomp
 
 
-{package Plack::Handler::Stomp::Exceptions::UnknownFrame;
+{
+package Plack::Handler::Stomp::Exceptions::UnknownFrame;
 {
   $Plack::Handler::Stomp::Exceptions::UnknownFrame::VERSION = '0.001_01';
 }
 {
   $Plack::Handler::Stomp::Exceptions::UnknownFrame::DIST = 'Plack-Handler-Stomp';
 }
- use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
- use namespace::autoclean;
- has frame => ( is => 'ro', required => 1 );
+use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
+use namespace::autoclean;
+has frame => ( is => 'ro', required => 1 );
 
- sub as_string {
-     sprintf q{Received a STOMP frame we don't know how to handle (%s)},
-         shift->frame->command;
- }
- __PACKAGE__->meta->make_immutable;
+sub as_string {
+    sprintf q{Received a STOMP frame we don't know how to handle (%s)},
+        shift->frame->command;
+}
+__PACKAGE__->meta->make_immutable;
 }
 
-{package Plack::Handler::Stomp::Exceptions::AppError;
+{
+package Plack::Handler::Stomp::Exceptions::AppError;
 {
   $Plack::Handler::Stomp::Exceptions::AppError::VERSION = '0.001_01';
 }
 {
   $Plack::Handler::Stomp::Exceptions::AppError::DIST = 'Plack-Handler-Stomp';
 }
- use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
- use namespace::autoclean;
- has '+previous_exception' => (
-     init_arg => 'app_error',
- );
- sub as_string {
-     return 'The application died:'.$_[0]->previous_exception;
- }
- __PACKAGE__->meta->make_immutable;
+use Moose;with 'Throwable','Net::Stomp::MooseHelpers::Exceptions::Stringy';
+use namespace::autoclean;
+has '+previous_exception' => (
+    init_arg => 'app_error',
+);
+sub as_string {
+    return 'The application died:'.$_[0]->previous_exception;
+}
+__PACKAGE__->meta->make_immutable;
 }
 
-{package Plack::Handler::Stomp::Exceptions::OneShot;
+{
+package Plack::Handler::Stomp::Exceptions::OneShot;
 {
   $Plack::Handler::Stomp::Exceptions::OneShot::VERSION = '0.001_01';
 }
 {
   $Plack::Handler::Stomp::Exceptions::OneShot::DIST = 'Plack-Handler-Stomp';
 }
- use namespace::autoclean;
- use Moose;with 'Throwable';
- __PACKAGE__->meta->make_immutable;
+use namespace::autoclean;
+use Moose;with 'Throwable';
+__PACKAGE__->meta->make_immutable;
 }
 
 1;
@@ -102,7 +105,7 @@ Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Net-a-porter.com.
+This software is copyright (c) 2012 by Net-a-porter.com.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

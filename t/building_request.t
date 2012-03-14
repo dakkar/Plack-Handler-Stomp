@@ -33,7 +33,7 @@ test 'a simple request' => sub {
 
         # client
         REQUEST_METHOD => 'POST',
-        REQUEST_URI => 'stomp://localhost/queue/testing',
+        REQUEST_URI => '/queue/testing',
         SCRIPT_NAME => '',
         PATH_INFO => '/queue/testing',
         QUERY_STRING => '',
