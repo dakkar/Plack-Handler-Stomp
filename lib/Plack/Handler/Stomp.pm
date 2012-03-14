@@ -492,7 +492,7 @@ sub build_psgi_env {
 
         # client
         REQUEST_METHOD => 'POST',
-        REQUEST_URI => "stomp://localhost$path_info",
+        REQUEST_URI => $path_info,
         SCRIPT_NAME => '',
         PATH_INFO => $path_info,
         QUERY_STRING => '',
