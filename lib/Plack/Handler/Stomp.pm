@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp;
 {
-  $Plack::Handler::Stomp::VERSION = '0.001_01';
+  $Plack::Handler::Stomp::VERSION = '0.1_01';
 }
 {
   $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
@@ -339,7 +339,7 @@ Plack::Handler::Stomp - adapt STOMP to (almost) HTTP, via Plack
 
 =head1 VERSION
 
-version 0.001_01
+version 0.1_01
 
 =head1 SYNOPSIS
 

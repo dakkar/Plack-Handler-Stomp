@@ -36,7 +36,6 @@ requires:
   Net::Stomp::MooseHelpers::CanConnect: 0
   Net::Stomp::MooseHelpers::CanSubscribe: 0
   Net::Stomp::MooseHelpers::Exceptions: 0
-  Net::Stomp::MooseHelpers::Exceptions::Stringy: 0
   Net::Stomp::MooseHelpers::ReadTrace: 0
   Net::Stomp::MooseHelpers::TraceOnly: 0
   Net::Stomp::MooseHelpers::Types: 0
@@ -51,4 +50,4 @@ requires:
   warnings: 0
 resources:
   repository: git://github.com/dakkar/plack-handler-stomp.git
-version: 0.001_01
+version: 0.1_01
