@@ -123,8 +123,8 @@ consume STOMP frames in an inner loop (see L</frame_loop>)
 =back
 
 If the application throws an exception, the loop exits re-throwing the
-exception. If the STOMP connection has problems, the outer loop is
-repeated with a different server (see
+exception. If the STOMP connection has problems, the loop is repeated
+with a different server (see
 L<next_server|Net::Stomp::MooseHelpers::CanConnect/next_server> in
 L<Net::Stomp::MooseHelpers::CanConnect>).
 
@@ -195,7 +195,10 @@ sub frame_loop {
 Delegates the handling to L</handle_stomp_message>,
 L</handle_stomp_error>, L</handle_stomp_receipt>, or throws
 L<Plack::Handler::Stomp::Exceptions::UnknownFrame> if the frame is of
-some other kind.
+some other kind. If you want to handle different kind of frames (maybe
+because you have some non-standard STOMP server), you can just
+subclass and add methods; for example, to handle C<STRANGE> frames,
+add a C<handle_stomp_strange> method.
 
 =cut
 
@@ -428,7 +431,7 @@ Builds a PSGI environment from the message, like:
 
   # client
   REQUEST_METHOD => 'POST',
-  REQUEST_URI => "stomp://localhost$path_info",
+  REQUEST_URI => $path_info,
   SCRIPT_NAME => '',
   PATH_INFO => $path_info,
   QUERY_STRING => '',
@@ -438,6 +441,8 @@ Builds a PSGI environment from the message, like:
 
   # http
   HTTP_USER_AGENT => 'Net::Stomp',
+  HTTP_CONTENT_LENGTH => length($body),
+  HTTP_CONTENT_TYPE => $content-type,
 
   # psgi
   'psgi.version' => [1,0],
@@ -532,5 +537,12 @@ sub build_psgi_env {
 }
 
 __PACKAGE__->meta->make_immutable;
+
+=head1 EXAMPLES
+
+You can find examples of use in the tests, or at
+https://github.com/dakkar/CatalystX-StompSampleApps
+
+=cut
 
 1;
