@@ -1,4 +1,10 @@
 package Plack::Handler::Stomp::NoNetwork;
+{
+  $Plack::Handler::Stomp::NoNetwork::VERSION = '0.1_02';
+}
+{
+  $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
+}
 use Moose;
 use namespace::autoclean;
 use Try::Tiny;
@@ -7,6 +13,85 @@ use Net::Stomp::MooseHelpers::ReadTrace;
 extends 'Plack::Handler::Stomp';
 
 # ABSTRACT: like L<Plack::Handler::Stomp>, but without a network
+
+
+with 'Net::Stomp::MooseHelpers::TraceOnly';
+
+sub _default_servers {
+    [ {
+        hostname => 'not.using.the.network',
+        port => 9999,
+    } ]
+}
+
+
+has file_watcher => (
+    is => 'ro',
+    isa => 'File::ChangeNotify::Watcher',
+    lazy_build => 1,
+);
+sub _build_file_watcher {
+    my ($self) = @_;
+
+    return File::ChangeNotify->instantiate_watcher(
+        directories => [ $self->trace_basedir->stringify ],
+        filter => qr{^\d+\.\d+-send-},
+    );
+}
+
+
+has frame_reader => (
+    is => 'ro',
+    lazy_build => 1,
+);
+sub _build_frame_reader {
+    my ($self) = @_;
+
+    return Net::Stomp::MooseHelpers::ReadTrace->new({
+        trace_basedir => $self->trace_basedir,
+    });
+}
+
+
+sub frame_loop {
+    my ($self,$app) = @_;
+
+    while (1) {
+        my @events = $self->file_watcher->wait_for_events();
+        for my $event (@events) {
+            next unless $event->type eq 'create';
+            next unless -f $event->path;
+            my $frame = $self->frame_reader
+                ->read_frame_from_filename($event->path);
+
+            # messages sent will be of type "SEND", but they would
+            # come back ask "MESSAGE" if they passed through a broker
+            $frame->command('MESSAGE') if $frame->command eq 'SEND';
+
+            $self->handle_stomp_frame($app, $frame);
+
+            Plack::Handler::Stomp::Exceptions::OneShot->throw()
+                  if $self->one_shot;
+        }
+    }
+}
+
+__PACKAGE__->meta->make_immutable;
+
+1;
+
+__END__
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a network
+
+=head1 VERSION
+
+version 0.1_02
 
 =head1 SYNOPSIS
 
@@ -47,58 +132,21 @@ This class does not implement subscription selectors. If you have
 multiple subscriptions for the same destination, a random one will be
 used.
 
-=cut
+=head1 ATTRIBUTES
 
-with 'Net::Stomp::MooseHelpers::TraceOnly';
-
-sub _default_servers {
-    [ {
-        hostname => 'not.using.the.network',
-        port => 9999,
-    } ]
-}
-
-=attr C<file_watcher>
+=head2 C<file_watcher>
 
 Instance of L<File::ChangeNotify::Watcher>, set up to monitor
 C<trace_basedir> for sent messages.
 
-=cut
-
-has file_watcher => (
-    is => 'ro',
-    isa => 'File::ChangeNotify::Watcher',
-    lazy_build => 1,
-);
-sub _build_file_watcher {
-    my ($self) = @_;
-
-    return File::ChangeNotify->instantiate_watcher(
-        directories => [ $self->trace_basedir->stringify ],
-        filter => qr{^\d+\.\d+-send-},
-    );
-}
-
-=attr C<frame_reader>
+=head2 C<frame_reader>
 
 Instance of L<Net::Stomp::MooseHelpers::ReadTrace> used to parse
 frames from disk.
 
-=cut
+=head1 METHODS
 
-has frame_reader => (
-    is => 'ro',
-    lazy_build => 1,
-);
-sub _build_frame_reader {
-    my ($self) = @_;
-
-    return Net::Stomp::MooseHelpers::ReadTrace->new({
-        trace_basedir => $self->trace_basedir,
-    });
-}
-
-=method C<frame_loop>
+=head2 C<frame_loop>
 
 This method ovverrides the corresponding one from
 L<Plack::Handler::Stomp>.
@@ -109,31 +157,16 @@ then passed to
 L<handle_stomp_frame|Plack::Handler::Stomp/handle_stomp_frame> as
 usual.
 
+=head1 AUTHOR
+
+Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Net-a-porter.com.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
 =cut
 
-sub frame_loop {
-    my ($self,$app) = @_;
-
-    while (1) {
-        my @events = $self->file_watcher->wait_for_events();
-        for my $event (@events) {
-            next unless $event->type eq 'create';
-            next unless -f $event->path;
-            my $frame = $self->frame_reader
-                ->read_frame_from_filename($event->path);
-
-            # messages sent will be of type "SEND", but they would
-            # come back ask "MESSAGE" if they passed through a broker
-            $frame->command('MESSAGE') if $frame->command eq 'SEND';
-
-            $self->handle_stomp_frame($app, $frame);
-
-            Plack::Handler::Stomp::Exceptions::OneShot->throw()
-                  if $self->one_shot;
-        }
-    }
-}
-
-__PACKAGE__->meta->make_immutable;
-
-1;

@@ -1,9 +1,96 @@
 package Test::Plack::Handler::Stomp::FakeStomp;
+{
+  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '0.1_02';
+}
+{
+  $Test::Plack::Handler::Stomp::FakeStomp::DIST = 'Plack-Handler-Stomp';
+}
 use strict;
 use warnings;
 use parent 'Net::Stomp';
 
 # ABSTRACT: subclass of L<Net::Stomp>, half-mocked for testing
+
+
+sub _get_connection {
+    return 1;
+}
+
+
+sub new {
+    my $class = shift;
+    my $callbacks = shift;
+    $callbacks->{new}->(@_);
+    my $self = $class->SUPER::new(@_);
+    $self->{__fakestomp__callbacks} = $callbacks;
+    return $self;
+}
+
+
+sub connect {
+    my ( $self, $conf ) = @_;
+
+    $self->{__fakestomp__callbacks}{connect}->($conf);
+    return 1;
+}
+
+
+sub disconnect {
+    my ( $self ) = @_;
+
+    $self->{__fakestomp__callbacks}{disconnect}->();
+    return 1;
+}
+
+
+sub can_read { return 1 }
+sub _connected { return 1 }
+
+
+
+sub subscribe {
+    my ( $self, $conf ) = @_;
+
+    $self->{__fakestomp__callbacks}{subscribe}->($conf);
+    return 1;
+}
+
+
+sub unsubscribe {
+    my ( $self, $conf ) = @_;
+
+    $self->{__fakestomp__callbacks}{unsubscribe}->($conf);
+    return 1;
+}
+
+
+sub send_frame {
+    my ( $self, $frame ) = @_;
+
+    $self->{__fakestomp__callbacks}{send_frame}->($frame);
+}
+
+
+sub receive_frame {
+    my ( $self, $conf ) = @_;
+
+    return $self->{__fakestomp__callbacks}{receive_frame}->($conf);
+}
+
+1;
+
+__END__
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+Test::Plack::Handler::Stomp::FakeStomp - subclass of L<Net::Stomp>, half-mocked for testing
+
+=head1 VERSION
+
+version 0.1_02
 
 =head1 DESCRIPTION
 
@@ -12,13 +99,9 @@ L<Test::Plack::Handler::Stomp>. It expects a set of callbacks that
 will be invoked whenever a method is called. It also does not talk to
 the network at all.
 
-=cut
+=head1 METHODS
 
-sub _get_connection {
-    return 1;
-}
-
-=method C<new>
+=head2 C<new>
 
   my $stomp = Test::Plack::Handler::Stomp::FakeStomp->new({
     new => sub { $self->queue_constructor_call(shift) },
@@ -42,102 +125,45 @@ The C<new> callback I<is> called by this method, just before
 delegating to the inherited constructor. This callback does not
 receive the callback hashref (i.e. it receives C<< @_[2..*] >>.
 
-=cut
-
-sub new {
-    my $class = shift;
-    my $callbacks = shift;
-    $callbacks->{new}->(@_);
-    my $self = $class->SUPER::new(@_);
-    $self->{__fakestomp__callbacks} = $callbacks;
-    return $self;
-}
-
-=method C<connect>
+=head2 C<connect>
 
 Calls the C<connect> callback, and returns 1.
 
-=cut
-
-sub connect {
-    my ( $self, $conf ) = @_;
-
-    $self->{__fakestomp__callbacks}{connect}->($conf);
-    return 1;
-}
-
-=method C<disconnect>
+=head2 C<disconnect>
 
 Calls the C<disconnect> callback, and returns 1.
 
-=cut
-
-sub disconnect {
-    my ( $self ) = @_;
-
-    $self->{__fakestomp__callbacks}{disconnect}->();
-    return 1;
-}
-
-=method C<can_read>
+=head2 C<can_read>
 
 Returns 1.
 
-=cut
-
-sub can_read { return 1 }
-sub _connected { return 1 }
-
-
-=method C<subscribe>
+=head2 C<subscribe>
 
 Calls the C<subscribe> callback, and returns 1.
 
-=cut
-
-sub subscribe {
-    my ( $self, $conf ) = @_;
-
-    $self->{__fakestomp__callbacks}{subscribe}->($conf);
-    return 1;
-}
-
-=method C<unsubscribe>
+=head2 C<unsubscribe>
 
 Calls the C<unsubscribe> callback, and returns 1.
 
-=cut
-
-sub unsubscribe {
-    my ( $self, $conf ) = @_;
-
-    $self->{__fakestomp__callbacks}{unsubscribe}->($conf);
-    return 1;
-}
-
-=method C<send_frame>
+=head2 C<send_frame>
 
 Calls the C<send_frame> callback.
 
-=cut
-
-sub send_frame {
-    my ( $self, $frame ) = @_;
-
-    $self->{__fakestomp__callbacks}{send_frame}->($frame);
-}
-
-=method C<receive_frame>
+=head2 C<receive_frame>
 
 Calls the C<receive_frame> callback, and returns whatever that
 returned.
 
+=head1 AUTHOR
+
+Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Net-a-porter.com.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
 =cut
 
-sub receive_frame {
-    my ( $self, $conf ) = @_;
-
-    return $self->{__fakestomp__callbacks}{receive_frame}->($conf);
-}
-
-1;
