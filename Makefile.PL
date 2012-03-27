@@ -13,12 +13,16 @@ my %WriteMakefileArgs = (
   "AUTHOR" => "Gianni Ceccarelli <gianni.ceccarelli\@net-a-porter.com>",
   "BUILD_REQUIRES" => {
     "Alien::ActiveMQ" => 0,
+    "Data::Printer" => 0,
     "File::Temp" => 0,
     "JSON::XS" => 0,
     "Moose::Role" => 0,
     "Moose::Util" => 0,
     "Net::Stomp::Frame" => 0,
+    "Test::Deep" => 0,
+    "Test::Fatal" => 0,
     "Test::More" => 0,
+    "Test::Most" => 0,
     "Test::Routine" => 0,
     "Test::Routine::Util" => 0
   },
@@ -54,7 +58,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.1_01",
+  "VERSION" => "1.0",
   "test" => {
     "TESTS" => "t/*.t"
   }
