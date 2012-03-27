@@ -1,4 +1,5 @@
 {{$NEXT}}
+- first non-devel release
 
 0.1_02    2012-03-25 10:55:56 Europe/London
 - add non-auto-detected test deps
