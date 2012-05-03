@@ -88,6 +88,11 @@ sub frame_loop {
 
     while (1) {
         my $frame = $self->connection->receive_frame();
+        if(!$frame || !ref($frame)) {
+            Net::Stomp::MooseHelpers::Exceptions::Stomp->throw({
+                stomp_error => 'empty frame received',
+            });
+        }
         $self->handle_stomp_frame($app, $frame);
 
         Plack::Handler::Stomp::Exceptions::OneShot->throw()
