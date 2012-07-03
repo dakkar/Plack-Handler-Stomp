@@ -4,7 +4,7 @@
       "Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300010, CPAN::Meta::Converter version 2.120630",
+   "generated_by" : "Dist::Zilla version 4.300020, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -77,6 +77,6 @@
          "web" : "https://github.com/dakkar/plack-handler-stomp"
       }
    },
-   "version" : "0.1_02"
+   "version" : "0.1_03"
 }
 
