@@ -69,6 +69,9 @@ sub run {
             if ($exception->isa('Plack::Handler::Stomp::Exceptions::AppError')) {
                 return;
             }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::UnknownFrame')) {
+                return;
+            }
             if ($exception->isa('Plack::Handler::Stomp::Exceptions::OneShot')) {
                 $exception=undef;
                 return;
