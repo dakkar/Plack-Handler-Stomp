@@ -10,8 +10,9 @@ use namespace::autoclean;
 use Try::Tiny;
 use Plack::Util;
 
-with 'Net::Stomp::MooseHelpers::CanConnect';
-with 'Net::Stomp::MooseHelpers::CanSubscribe';
+with 'Net::Stomp::MooseHelpers::CanConnect' => { -version => '1.1' };
+with 'Net::Stomp::MooseHelpers::CanSubscribe' => { -version => '1.1' };
+with 'Net::Stomp::MooseHelpers::ReconnectOnFailure';
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
 
@@ -136,11 +137,10 @@ exactly 1 frame.
 sub run {
     my ($self, $app) = @_;
 
-    SERVER_LOOP:
-    while (1) {
-        my $exception;
+    my $exception;
+    $self->reconnect_on_failure(
+        sub {
         try {
-            $self->connect();
             $self->subscribe();
 
             $self->frame_loop($app);
@@ -149,23 +149,24 @@ sub run {
         };
         if ($exception) {
             if (!blessed $exception) {
-                die "unhandled exception $exception";
+                $exception = "unhandled exception $exception";
+                return;
             }
             if ($exception->isa('Plack::Handler::Stomp::Exceptions::AppError')) {
-                die $exception;
-            }
-            if ($exception->isa('Net::Stomp::MooseHelpers::Exceptions::Stomp')) {
-                $self->clear_connection;
-                next SERVER_LOOP;
-            }
-            if ($exception->isa('Plack::Handler::Stomp::Exceptions::OneShot')) {
-                last SERVER_LOOP;
+                return;
             }
             if ($exception->isa('Plack::Handler::Stomp::Exceptions::UnknownFrame')) {
-                die $exception;
+                return;
             }
+            if ($exception->isa('Plack::Handler::Stomp::Exceptions::OneShot')) {
+                $exception=undef;
+                return;
+            }
+            die $exception;
         }
-    }
+    });
+    die $exception if defined $exception;
+    return;
 }
 
 =method C<frame_loop>

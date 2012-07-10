@@ -1,4 +1,5 @@
 {{$NEXT}}
+- use the new ReconnectOnFailure wapper role
 
 1.0       2012-03-27 12:32:30 Europe/London
 - first non-devel release

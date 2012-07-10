@@ -30,6 +30,7 @@ test 'unknown frames' => sub {
                 path_info => '/my/path',
             },
         ],
+        connect_retry_delay => 1,
     );
 
     my $exception = exception {
