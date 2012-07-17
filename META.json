@@ -78,6 +78,6 @@
          "web" : "https://github.com/dakkar/plack-handler-stomp"
       }
    },
-   "version" : "1.02"
+   "version" : "1.01"
 }
 
