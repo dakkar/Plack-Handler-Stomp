@@ -2,6 +2,7 @@ package Test::Plack::Handler::Stomp::FakeStomp;
 use strict;
 use warnings;
 use parent 'Net::Stomp';
+use Net::Stomp::Frame;
 
 # ABSTRACT: subclass of L<Net::Stomp>, half-mocked for testing
 
@@ -63,7 +64,13 @@ sub connect {
     my ( $self, $conf ) = @_;
 
     $self->{__fakestomp__callbacks}{connect}->($conf);
-    return 1;
+    return Net::Stomp::Frame->new({
+        command => 'CONNECTED',
+        headers => {
+            session => 'ID:foo',
+        },
+        body => '',
+    });
 }
 
 =method C<disconnect>
