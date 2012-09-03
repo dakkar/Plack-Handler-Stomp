@@ -1,6 +1,6 @@
 package Test::Plack::Handler::Stomp;
 {
-  $Test::Plack::Handler::Stomp::VERSION = '1.01';
+  $Test::Plack::Handler::Stomp::VERSION = '1.02';
 }
 {
   $Test::Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
@@ -207,6 +207,7 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 __END__
+
 =pod
 
 =encoding utf-8
@@ -217,7 +218,7 @@ Test::Plack::Handler::Stomp - testing library for Plack::Handler::Stomp
 
 =head1 VERSION
 
-version 1.01
+version 1.02
 
 =head1 SYNOPSIS
 
@@ -479,4 +480,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

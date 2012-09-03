@@ -4,7 +4,7 @@
       "Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300020, CPAN::Meta::Converter version 2.120630",
+   "generated_by" : "Dist::Zilla version 4.300021, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -34,6 +34,7 @@
             "MooseX::Types::Moose" : "0",
             "MooseX::Types::Structured" : "0",
             "Net::Stomp" : "0",
+            "Net::Stomp::Frame" : "0",
             "Net::Stomp::MooseHelpers::CanConnect" : "1.1",
             "Net::Stomp::MooseHelpers::CanSubscribe" : "1.1",
             "Net::Stomp::MooseHelpers::Exceptions" : "0",
@@ -60,7 +61,6 @@
             "JSON::XS" : "0",
             "Moose::Role" : "0",
             "Moose::Util" : "0",
-            "Net::Stomp::Frame" : "0",
             "Test::Deep" : "0",
             "Test::Fatal" : "0",
             "Test::More" : "0",
@@ -78,6 +78,6 @@
          "web" : "https://github.com/dakkar/plack-handler-stomp"
       }
    },
-   "version" : "1.01"
+   "version" : "1.02"
 }
 

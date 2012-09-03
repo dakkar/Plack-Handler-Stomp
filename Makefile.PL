@@ -18,7 +18,6 @@ my %WriteMakefileArgs = (
     "JSON::XS" => 0,
     "Moose::Role" => 0,
     "Moose::Util" => 0,
-    "Net::Stomp::Frame" => 0,
     "Test::Deep" => 0,
     "Test::Fatal" => 0,
     "Test::More" => 0,
@@ -42,6 +41,7 @@ my %WriteMakefileArgs = (
     "MooseX::Types::Moose" => 0,
     "MooseX::Types::Structured" => 0,
     "Net::Stomp" => 0,
+    "Net::Stomp::Frame" => 0,
     "Net::Stomp::MooseHelpers::CanConnect" => "1.1",
     "Net::Stomp::MooseHelpers::CanSubscribe" => "1.1",
     "Net::Stomp::MooseHelpers::Exceptions" => 0,
@@ -59,7 +59,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "1.01",
+  "VERSION" => "1.02",
   "test" => {
     "TESTS" => "t/*.t"
   }

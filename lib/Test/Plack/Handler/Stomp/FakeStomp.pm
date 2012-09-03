@@ -1,6 +1,6 @@
 package Test::Plack::Handler::Stomp::FakeStomp;
 {
-  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.01';
+  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.02';
 }
 {
   $Test::Plack::Handler::Stomp::FakeStomp::DIST = 'Plack-Handler-Stomp';
@@ -8,6 +8,7 @@ package Test::Plack::Handler::Stomp::FakeStomp;
 use strict;
 use warnings;
 use parent 'Net::Stomp';
+use Net::Stomp::Frame;
 
 # ABSTRACT: subclass of L<Net::Stomp>, half-mocked for testing
 
@@ -31,7 +32,13 @@ sub connect {
     my ( $self, $conf ) = @_;
 
     $self->{__fakestomp__callbacks}{connect}->($conf);
-    return 1;
+    return Net::Stomp::Frame->new({
+        command => 'CONNECTED',
+        headers => {
+            session => 'ID:foo',
+        },
+        body => '',
+    });
 }
 
 
@@ -80,6 +87,7 @@ sub receive_frame {
 1;
 
 __END__
+
 =pod
 
 =encoding utf-8
@@ -90,7 +98,7 @@ Test::Plack::Handler::Stomp::FakeStomp - subclass of L<Net::Stomp>, half-mocked 
 
 =head1 VERSION
 
-version 1.01
+version 1.02
 
 =head1 DESCRIPTION
 
@@ -166,4 +174,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-
