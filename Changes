@@ -1,4 +1,5 @@
 {{$NEXT}}
+- work around complicated VERSION comparison
 
 1.02      2012-09-03 11:32:52 Europe/London
 - compatibility with Net::Stomp::MooseHelpers 1.3
