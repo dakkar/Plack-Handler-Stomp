@@ -8,12 +8,14 @@ with 'TestApp';
 
 has t => (
     is => 'rw',
-    default => sub { Test::Plack::Handler::Stomp->new() }
+    lazy_build => 1,
 );
+sub _build_t { Test::Plack::Handler::Stomp->new() }
 
 before run_test => sub {
     my ($self) = @_;
 
+    $self->clear_t;
     my $t = $self->t;
 
     $t->clear_calls_and_queues;
@@ -35,6 +37,7 @@ before run_test => sub {
             { hostname => 'first', port => 61613 },
             { hostname => 'second', port => 61613 },
         ],
+        connect_retry_delay => 1,
     );
 };
 
@@ -43,7 +46,6 @@ test 'two servers, first one dies on connection' => sub {
 
     my $t = $self->t;
 
-    $t->handler->clear_connection;
     $t->handler->connection->{__fakestomp__callbacks}{connect} = sub {
         my $args = shift;
         $t->queue_connection_call($args);
@@ -51,7 +53,11 @@ test 'two servers, first one dies on connection' => sub {
             if $t->handler->current_server->{hostname} eq 'first';
     };
 
-    $t->handler->run($self->psgi_test_app);
+    my @warns;
+    {
+        local $SIG{__WARN__} = sub { push @warns,@_ };
+        $t->handler->run($self->psgi_test_app);
+    }
     is($t->connection_calls_count,2,
        'connected twice');
     is($t->subscription_calls_count,1,
@@ -60,6 +66,9 @@ test 'two servers, first one dies on connection' => sub {
        'message consumed');
     is($t->sent_frames_count,1,
        'message ACKed');
+    is(scalar(@warns),1,'one warning');
+    like($warns[0],qr{\Aconnection problems\b.*?\bCan't connect\b},
+         'correct warning');
 };
 
 test 'two servers, first one dies on subscribe' => sub {
@@ -67,7 +76,6 @@ test 'two servers, first one dies on subscribe' => sub {
 
     my $t = $self->t;
 
-    $t->handler->clear_connection;
     $t->handler->connection->{__fakestomp__callbacks}{subscribe} = sub {
         my $args = shift;
         $t->queue_subscription_call($args);
@@ -75,7 +83,11 @@ test 'two servers, first one dies on subscribe' => sub {
             if $t->handler->current_server->{hostname} eq 'first';
     };
 
-    $t->handler->run($self->psgi_test_app);
+    my @warns;
+    {
+        local $SIG{__WARN__} = sub { push @warns,@_ };
+        $t->handler->run($self->psgi_test_app);
+    }
 
     is($t->connection_calls_count,2,
        'connected twice');
@@ -85,6 +97,9 @@ test 'two servers, first one dies on subscribe' => sub {
        'message consumed');
     is($t->sent_frames_count,1,
        'message ACKed');
+    is(scalar(@warns),1,'one warning');
+    like($warns[0],qr{\Aconnection problems\b.*?\bCan't subscribe\b},
+         'correct warning');
 };
 
 run_me;

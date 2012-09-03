@@ -34,10 +34,12 @@
             "MooseX::Types::Moose" : "0",
             "MooseX::Types::Structured" : "0",
             "Net::Stomp" : "0",
-            "Net::Stomp::MooseHelpers::CanConnect" : "0",
-            "Net::Stomp::MooseHelpers::CanSubscribe" : "0",
+            "Net::Stomp::Frame" : "0",
+            "Net::Stomp::MooseHelpers::CanConnect" : "v1.1.0",
+            "Net::Stomp::MooseHelpers::CanSubscribe" : "v1.1.0",
             "Net::Stomp::MooseHelpers::Exceptions" : "0",
             "Net::Stomp::MooseHelpers::ReadTrace" : "0",
+            "Net::Stomp::MooseHelpers::ReconnectOnFailure" : "0",
             "Net::Stomp::MooseHelpers::TraceOnly" : "0",
             "Net::Stomp::MooseHelpers::Types" : "0",
             "Plack::Util" : "0",
@@ -59,7 +61,6 @@
             "JSON::XS" : "0",
             "Moose::Role" : "0",
             "Moose::Util" : "0",
-            "Net::Stomp::Frame" : "0",
             "Test::Deep" : "0",
             "Test::Fatal" : "0",
             "Test::More" : "0",
@@ -69,7 +70,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "repository" : {
          "type" : "git",
@@ -77,6 +78,6 @@
          "web" : "https://github.com/dakkar/plack-handler-stomp"
       }
    },
-   "version" : "0.1_03"
+   "version" : "1.03"
 }
 
