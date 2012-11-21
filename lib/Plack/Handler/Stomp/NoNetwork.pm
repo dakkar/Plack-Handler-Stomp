@@ -87,8 +87,13 @@ sub frame_loop {
         for my $event (@events) {
             next unless $event->type eq 'create';
             next unless -f $event->path;
-            my $frame = $self->frame_reader
-                ->read_frame_from_filename($event->path);
+            # loop until the reader can get a complete frame, to work
+            # around race conditions between the writer and us
+            my $frame;
+            while (!$frame) {
+                $frame = $self->frame_reader
+                    ->read_frame_from_filename($event->path);
+            }
 
             # messages sent will be of type "SEND", but they would
             # come back ask "MESSAGE" if they passed through a broker
