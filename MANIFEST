@@ -21,9 +21,11 @@ t/exceptions.t
 t/lib/BrokerTestApp.pm
 t/lib/MyTesting.pm
 t/lib/RunTestApp.pm
+t/lib/RunTestAppNoNet.pm
 t/lib/TestApp.pm
 t/logging.t
 t/multi_server.t
+t/nonetwork.t
 t/path_info_subst.t
 t/real_broker.t
 t/release-no-tabs.t

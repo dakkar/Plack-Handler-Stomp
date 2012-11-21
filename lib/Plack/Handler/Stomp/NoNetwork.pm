@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::NoNetwork;
 {
-  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.02';
+  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.04';
 }
 {
   $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
@@ -9,7 +9,8 @@ use Moose;
 use namespace::autoclean;
 use Try::Tiny;
 use File::ChangeNotify;
-use Net::Stomp::MooseHelpers::ReadTrace;
+use Net::Stomp::MooseHelpers::ReadTrace '1.7';
+use Path::Class;
 extends 'Plack::Handler::Stomp';
 
 # ABSTRACT: like L<Plack::Handler::Stomp>, but without a network
@@ -24,6 +25,29 @@ sub _default_servers {
     } ]
 }
 
+has subscription_directory_map => (
+    is => 'ro',
+    isa => 'HashRef',
+    default => sub { { } },
+);
+
+after subscribe_single => sub {
+    my ($self,$sub,$headers) = @_;
+
+    my $dest_dir = $self->trace_basedir->subdir(
+        $self->_dirname_from_destination(
+            $headers->{destination}
+        )
+    );
+    $dest_dir->mkpath or die "Can't create $dest_dir: $!";
+
+    my $id = $headers->{id};
+
+    $self->subscription_directory_map->{$dest_dir->stringify}=$id;
+
+    return;
+};
+
 
 has file_watcher => (
     is => 'ro',
@@ -33,8 +57,10 @@ has file_watcher => (
 sub _build_file_watcher {
     my ($self) = @_;
 
+    my @directories = keys %{$self->subscription_directory_map};
+
     return File::ChangeNotify->instantiate_watcher(
-        directories => [ $self->trace_basedir->stringify ],
+        directories => \@directories,
         filter => qr{^\d+\.\d+-send-},
     );
 }
@@ -68,6 +94,11 @@ sub frame_loop {
             # come back ask "MESSAGE" if they passed through a broker
             $frame->command('MESSAGE') if $frame->command eq 'SEND';
 
+            $frame->headers->{subscription} =
+                $self->subscription_directory_map->{
+                    file($event->path)->dir->stringify
+                };
+
             $self->handle_stomp_frame($app, $frame);
 
             Plack::Handler::Stomp::Exceptions::OneShot->throw()
@@ -92,7 +123,7 @@ Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a 
 
 =head1 VERSION
 
-version 1.02
+version 1.04
 
 =head1 SYNOPSIS
 
@@ -101,14 +132,8 @@ version 1.02
     subscriptions => [
       { destination => '/queue/plack-handler-stomp-test' },
       { destination => '/topic/plack-handler-stomp-test',
-        headers => {
-            selector => q{custom_header = '1' or JMSType = 'test_foo'},
-        },
         path_info => '/topic/ch1', },
       { destination => '/topic/plack-handler-stomp-test',
-        headers => {
-            selector => q{custom_header = '2' or JMSType = 'test_bar'},
-        },
         path_info => '/topic/ch2', },
     ],
   });
