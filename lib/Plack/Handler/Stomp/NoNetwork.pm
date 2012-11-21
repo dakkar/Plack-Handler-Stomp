@@ -39,7 +39,7 @@ after subscribe_single => sub {
             $headers->{destination}
         )
     );
-    $dest_dir->mkpath or die "Can't create $dest_dir: $!";
+    $dest_dir->mkpath;
 
     my $id = $headers->{id};
 
