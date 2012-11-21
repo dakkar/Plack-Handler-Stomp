@@ -1,4 +1,4 @@
-1.04      2012-11-21 17:20:25 Europe/London
+1.04      2012-11-21 17:24:46 Europe/London
 - test Plack::Handler::Stomp::NoNetwork (and make it work!)
 
 1.03      2012-09-03 19:52:02 Europe/London

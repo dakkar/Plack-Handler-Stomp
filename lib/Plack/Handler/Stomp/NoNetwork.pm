@@ -9,7 +9,7 @@ use Moose;
 use namespace::autoclean;
 use Try::Tiny;
 use File::ChangeNotify;
-use Net::Stomp::MooseHelpers::ReadTrace '1.7';
+use Net::Stomp::MooseHelpers::ReadTrace 1.7;
 use Path::Class;
 extends 'Plack::Handler::Stomp';
 
