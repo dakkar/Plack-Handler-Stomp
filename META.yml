@@ -38,8 +38,8 @@ requires:
   MooseX::Types::Structured: 0
   Net::Stomp: 0
   Net::Stomp::Frame: 0
-  Net::Stomp::MooseHelpers::CanConnect: 1.3
-  Net::Stomp::MooseHelpers::CanSubscribe: 1.3
+  Net::Stomp::MooseHelpers::CanConnect: 1.1
+  Net::Stomp::MooseHelpers::CanSubscribe: 1.1
   Net::Stomp::MooseHelpers::Exceptions: 0
   Net::Stomp::MooseHelpers::ReadTrace: 1.7
   Net::Stomp::MooseHelpers::ReconnectOnFailure: 0
