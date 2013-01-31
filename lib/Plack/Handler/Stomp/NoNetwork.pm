@@ -135,7 +135,18 @@ sub frame_loop {
     my ($self,$app) = @_;
 
     while (1) {
-        my @events = $self->file_watcher->wait_for_events();
+        my @events;
+        # if someone deletes multiple directories while we're looking
+        # at them, File::ChangeNotify::Watcher::Default gets very
+        # confused and throws an exception. Let's catch it and just
+        # re-build the watcher.
+        try { @events = $self->file_watcher->wait_for_events() }
+        catch {
+            if (/File::ChangeNotify::Watcher::Default::/) {
+                $self->clear_file_watcher;
+            }
+            else { die $_ }
+        };
         for my $event (@events) {
             next unless $event->type eq 'create';
             next unless -f $event->path;

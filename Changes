@@ -1,4 +1,5 @@
 {{$NEXT}}
+- work around exceptions in File::ChangeNotify
 
 1.04      2012-11-21 17:26:33 Europe/London
 - test Plack::Handler::Stomp::NoNetwork (and make it work!)
