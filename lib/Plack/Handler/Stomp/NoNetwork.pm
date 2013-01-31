@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::NoNetwork;
 {
-  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.04';
+  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.05';
 }
 {
   $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
@@ -83,7 +83,18 @@ sub frame_loop {
     my ($self,$app) = @_;
 
     while (1) {
-        my @events = $self->file_watcher->wait_for_events();
+        my @events;
+        # if someone deletes multiple directories while we're looking
+        # at them, File::ChangeNotify::Watcher::Default gets very
+        # confused and throws an exception. Let's catch it and just
+        # re-build the watcher.
+        try { @events = $self->file_watcher->wait_for_events() }
+        catch {
+            if (/File::ChangeNotify::Watcher::Default::/) {
+                $self->clear_file_watcher;
+            }
+            else { die $_ }
+        };
         for my $event (@events) {
             next unless $event->type eq 'create';
             next unless -f $event->path;
@@ -128,7 +139,7 @@ Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a 
 
 =head1 VERSION
 
-version 1.04
+version 1.05
 
 =head1 SYNOPSIS
 
