@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+1.05      2013-01-31 16:58:52 Europe/London
 - work around exceptions in File::ChangeNotify
 
 1.04      2012-11-21 17:26:33 Europe/London
