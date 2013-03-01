@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::NoNetwork;
 {
-  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.05';
+  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.06';
 }
 {
   $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
@@ -58,6 +58,12 @@ sub _build_file_watcher {
     my ($self) = @_;
 
     my @directories = keys %{$self->subscription_directory_map};
+
+    # File::ChangeNotify::Watcher::Default throws an exception if you
+    # ask it to monitor non-existent directories; coupled with the
+    # try/catch below, it would lead to an infinite loop. Let's make
+    # sure it does not happen
+    dir($_)->mkpath for @directories;
 
     return File::ChangeNotify->instantiate_watcher(
         directories => \@directories,
@@ -139,7 +145,7 @@ Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a 
 
 =head1 VERSION
 
-version 1.05
+version 1.06
 
 =head1 SYNOPSIS
 
