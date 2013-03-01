@@ -93,6 +93,12 @@ sub _build_file_watcher {
 
     my @directories = keys %{$self->subscription_directory_map};
 
+    # File::ChangeNotify::Watcher::Default throws an exception if you
+    # ask it to monitor non-existent directories; coupled with the
+    # try/catch below, it would lead to an infinite loop. Let's make
+    # sure it does not happen
+    dir($_)->mkpath for @directories;
+
     return File::ChangeNotify->instantiate_watcher(
         directories => \@directories,
         filter => qr{^\d+\.\d+-send-},
