@@ -1,3 +1,6 @@
+1.06_01   2013-03-19 16:15:58 Europe/London
+- hopefully fix nonetwork.t under Win32
+
 1.06      2013-03-01 15:49:54 Europe/London
 - better work around exceptions in File::ChangeNotify
 
