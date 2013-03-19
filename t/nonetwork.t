@@ -114,16 +114,21 @@ test 'talk to the app' => sub {
 
         sleep(1);
 
+        # the mess with forward and backward slashes is necessary:
+        # sometimes, under Win32, we get filenames with mixed slashes,
+        # so we have to accept whatever looks vaguely right. Might
+        # break on VMS, though...
         my $sent_dir = $reader->trace_subdir_for_destination('/queue/not-subscribed')->stringify;
+        my $sent_dir_re = $sent_dir;$sent_dir_re =~ s{[/\\]}{[/\\\\]}g;
         my (@events) = $watcher->wait_for_events;
 
         cmp_deeply(
             \@events,
             [
                 methods(type => 'create',
-                        path => $sent_dir),
+                        path => re(qr{$sent_dir_re})),
                 methods(type => 'create',
-                        path => re(qr{\Q$sent_dir\E/\d+\.\d+-send-})),
+                        path => re(qr{\Q$sent_dir\E[/\\]\d+\.\d+-send-})),
             ],
             'one message sent by us, none by the consumer'
         );
