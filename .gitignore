@@ -6,7 +6,8 @@ Makefile.old
 MANIFEST.bak
 *.tar.gz
 /inc/
-META.yml
+/META.*
+/MYMETA.*
 .prove
 *~
 /.build/
