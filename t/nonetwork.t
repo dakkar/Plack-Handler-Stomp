@@ -118,8 +118,12 @@ test 'talk to the app' => sub {
         # sometimes, under Win32, we get filenames with mixed slashes,
         # so we have to accept whatever looks vaguely right. Might
         # break on VMS, though...
-        my $sent_dir = $reader->trace_subdir_for_destination('/queue/not-subscribed')->stringify;
-        my $sent_dir_re = $sent_dir;$sent_dir_re =~ s{[/\\]}{[/\\\\]}g;
+        my $sent_dir = $reader->trace_subdir_for_destination('/queue/not-subscribed')->absolute;
+        my $sent_dir_re = join '[/\\\\]', map {quotemeta}
+            $sent_dir->volume,$sent_dir->dir_list(1);
+        my $sent_file_re = join '[/\\\\]', (map {quotemeta}
+            $sent_dir->volume,$sent_dir->dir_list(1)),
+                '\d+\.\d+-send-';
         my (@events) = $watcher->wait_for_events;
 
         cmp_deeply(
@@ -128,7 +132,7 @@ test 'talk to the app' => sub {
                 methods(type => 'create',
                         path => re(qr{$sent_dir_re})),
                 methods(type => 'create',
-                        path => re(qr{\Q$sent_dir\E[/\\]\d+\.\d+-send-})),
+                        path => re(qr{$sent_file_re})),
             ],
             'one message sent by us, none by the consumer'
         );

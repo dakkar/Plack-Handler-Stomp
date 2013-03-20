@@ -1,6 +1,6 @@
 package Test::Plack::Handler::Stomp;
 {
-  $Test::Plack::Handler::Stomp::VERSION = '1.06_01';
+  $Test::Plack::Handler::Stomp::VERSION = '1.06_02';
 }
 {
   $Test::Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
@@ -218,7 +218,7 @@ Test::Plack::Handler::Stomp - testing library for Plack::Handler::Stomp
 
 =head1 VERSION
 
-version 1.06_01
+version 1.06_02
 
 =head1 SYNOPSIS
 

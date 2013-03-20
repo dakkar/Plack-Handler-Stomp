@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::Types;
 {
-  $Plack::Handler::Stomp::Types::VERSION = '1.06_01';
+  $Plack::Handler::Stomp::Types::VERSION = '1.06_02';
 }
 {
   $Plack::Handler::Stomp::Types::DIST = 'Plack-Handler-Stomp';
@@ -46,7 +46,7 @@ Plack::Handler::Stomp::Types - type definitions for Plack::Handler::Stomp
 
 =head1 VERSION
 
-version 1.06_01
+version 1.06_02
 
 =head1 TYPES
 
