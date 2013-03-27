@@ -104,8 +104,21 @@ test 'talk to the app' => sub {
                        @case_comparers,
                    ],
                    'tracing works'
-               )
+               );
     };
+
+    # we send the "exit now" command on the topic, so we're sure we
+    # won't find it on the next run
+    #
+    # BrokerTestApp exits without ACK-ing the message, so it would
+    # remain on the queue, ready to stop the application the next time
+    # we try to run the test
+    $conn->send( {
+        destination => '/topic/plack-handler-stomp-test',
+        body => JSON::XS::encode_json({exit_now=>1}),
+        JMSType => 'test_foo',
+    } );
+
 };
 
 run_me;
