@@ -5,7 +5,6 @@ use Test::Routine::Util;
 use MyTesting;
 use JSON::XS;
 use Net::Stomp::MooseHelpers::ReadTrace;
-use Data::Printer;
 with 'RunTestApp';
 
 test 'talk to the app' => sub {
@@ -105,7 +104,7 @@ test 'talk to the app' => sub {
                        @case_comparers,
                    ],
                    'tracing works'
-               ) or p @frames;
+               );
     };
 
     # we send the "exit now" command on the topic, so we're sure we
