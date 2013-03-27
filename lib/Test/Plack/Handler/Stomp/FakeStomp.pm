@@ -1,6 +1,6 @@
 package Test::Plack::Handler::Stomp::FakeStomp;
 {
-  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.04';
+  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.06_03';
 }
 {
   $Test::Plack::Handler::Stomp::FakeStomp::DIST = 'Plack-Handler-Stomp';
@@ -97,7 +97,7 @@ Test::Plack::Handler::Stomp::FakeStomp - subclass of L<Net::Stomp>, half-mocked 
 
 =head1 VERSION
 
-version 1.04
+version 1.06_03
 
 =head1 DESCRIPTION
 

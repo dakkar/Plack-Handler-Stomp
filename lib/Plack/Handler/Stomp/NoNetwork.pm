@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::NoNetwork;
 {
-  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.04';
+  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.06_03';
 }
 {
   $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
@@ -9,7 +9,8 @@ use Moose;
 use namespace::autoclean;
 use Try::Tiny;
 use File::ChangeNotify;
-use Net::Stomp::MooseHelpers::ReadTrace;
+use Net::Stomp::MooseHelpers::ReadTrace 1.7;
+use Path::Class;
 extends 'Plack::Handler::Stomp';
 
 # ABSTRACT: like L<Plack::Handler::Stomp>, but without a network
@@ -24,6 +25,29 @@ sub _default_servers {
     } ]
 }
 
+has subscription_directory_map => (
+    is => 'ro',
+    isa => 'HashRef',
+    default => sub { { } },
+);
+
+after subscribe_single => sub {
+    my ($self,$sub,$headers) = @_;
+
+    my $dest_dir = $self->trace_basedir->subdir(
+        $self->_dirname_from_destination(
+            $headers->{destination}
+        )
+    );
+    $dest_dir->mkpath;
+
+    my $id = $headers->{id};
+
+    $self->subscription_directory_map->{$dest_dir->stringify}=$id;
+
+    return;
+};
+
 
 has file_watcher => (
     is => 'ro',
@@ -33,8 +57,16 @@ has file_watcher => (
 sub _build_file_watcher {
     my ($self) = @_;
 
+    my @directories = keys %{$self->subscription_directory_map};
+
+    # File::ChangeNotify::Watcher::Default throws an exception if you
+    # ask it to monitor non-existent directories; coupled with the
+    # try/catch below, it would lead to an infinite loop. Let's make
+    # sure it does not happen
+    dir($_)->mkpath for @directories;
+
     return File::ChangeNotify->instantiate_watcher(
-        directories => [ $self->trace_basedir->stringify ],
+        directories => \@directories,
         filter => qr{^\d+\.\d+-send-},
     );
 }
@@ -57,16 +89,37 @@ sub frame_loop {
     my ($self,$app) = @_;
 
     while (1) {
-        my @events = $self->file_watcher->wait_for_events();
+        my @events;
+        # if someone deletes multiple directories while we're looking
+        # at them, File::ChangeNotify::Watcher::Default gets very
+        # confused and throws an exception. Let's catch it and just
+        # re-build the watcher.
+        try { @events = $self->file_watcher->wait_for_events() }
+        catch {
+            if (/File::ChangeNotify::Watcher::Default::/) {
+                $self->clear_file_watcher;
+            }
+            else { die $_ }
+        };
         for my $event (@events) {
             next unless $event->type eq 'create';
             next unless -f $event->path;
-            my $frame = $self->frame_reader
-                ->read_frame_from_filename($event->path);
+            # loop until the reader can get a complete frame, to work
+            # around race conditions between the writer and us
+            my $frame;
+            while (!$frame) {
+                $frame = $self->frame_reader
+                    ->read_frame_from_filename($event->path);
+            }
 
             # messages sent will be of type "SEND", but they would
             # come back ask "MESSAGE" if they passed through a broker
             $frame->command('MESSAGE') if $frame->command eq 'SEND';
+
+            $frame->headers->{subscription} =
+                $self->subscription_directory_map->{
+                    file($event->path)->dir->stringify
+                };
 
             $self->handle_stomp_frame($app, $frame);
 
@@ -91,7 +144,7 @@ Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a 
 
 =head1 VERSION
 
-version 1.04
+version 1.06_03
 
 =head1 SYNOPSIS
 
@@ -100,14 +153,8 @@ version 1.04
     subscriptions => [
       { destination => '/queue/plack-handler-stomp-test' },
       { destination => '/topic/plack-handler-stomp-test',
-        headers => {
-            selector => q{custom_header = '1' or JMSType = 'test_foo'},
-        },
         path_info => '/topic/ch1', },
       { destination => '/topic/plack-handler-stomp-test',
-        headers => {
-            selector => q{custom_header = '2' or JMSType = 'test_bar'},
-        },
         path_info => '/topic/ch2', },
     ],
   });

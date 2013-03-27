@@ -102,9 +102,11 @@ sub _build_child {
 
 sub DEMOLISH {
     my ($self) = @_;
+    return unless $self->has_child;
+
     my $child = $self->child;
     kill 'TERM',$child;
-    warn "waitpid for child\n";
+    diag "waitpid for child\n";
     waitpid($child,0);
 }
 
