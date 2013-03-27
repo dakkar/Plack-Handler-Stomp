@@ -5,6 +5,7 @@ use Test::Routine::Util;
 use MyTesting;
 use JSON::XS;
 use Net::Stomp::MooseHelpers::ReadTrace;
+use Data::Printer;
 with 'RunTestApp';
 
 test 'talk to the app' => sub {
@@ -71,18 +72,6 @@ test 'talk to the app' => sub {
         }
     };
 
-    # we send the "exit now" command on the topic, so we're sure we
-    # won't find it on the next run
-    #
-    # BrokerTestApp exits without ACK-ing the message, so it would
-    # remain on the queue, ready to stop the application the next time
-    # we try to run the test
-    $conn->send( {
-        destination => '/topic/plack-handler-stomp-test',
-        body => JSON::XS::encode_json({exit_now=>1}),
-        JMSType => 'test_foo',
-    } );
-
     subtest 'tracing' => sub {
         my $reader = Net::Stomp::MooseHelpers::ReadTrace->new({
             trace_basedir => $self->trace_dir,
@@ -116,8 +105,20 @@ test 'talk to the app' => sub {
                        @case_comparers,
                    ],
                    'tracing works'
-               )
+               ) or p @frames;
     };
+
+    # we send the "exit now" command on the topic, so we're sure we
+    # won't find it on the next run
+    #
+    # BrokerTestApp exits without ACK-ing the message, so it would
+    # remain on the queue, ready to stop the application the next time
+    # we try to run the test
+    $conn->send( {
+        destination => '/topic/plack-handler-stomp-test',
+        body => JSON::XS::encode_json({exit_now=>1}),
+        JMSType => 'test_foo',
+    } );
 
 };
 
