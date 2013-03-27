@@ -72,7 +72,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "repository" : {
          "type" : "git",
@@ -80,6 +80,6 @@
          "web" : "https://github.com/dakkar/plack-handler-stomp"
       }
    },
-   "version" : "1.06_03"
+   "version" : "1.07"
 }
 

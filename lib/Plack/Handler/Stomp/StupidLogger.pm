@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::StupidLogger;
 {
-  $Plack::Handler::Stomp::StupidLogger::VERSION = '1.06_03';
+  $Plack::Handler::Stomp::StupidLogger::VERSION = '1.07';
 }
 {
   $Plack::Handler::Stomp::StupidLogger::DIST = 'Plack-Handler-Stomp';
@@ -45,7 +45,7 @@ Plack::Handler::Stomp::StupidLogger - dead-simple logger for Plack::Handler::Sto
 
 =head1 VERSION
 
-version 1.06_03
+version 1.07
 
 =head1 METHODS
 
