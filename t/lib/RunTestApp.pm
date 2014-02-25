@@ -89,6 +89,8 @@ sub _build_child {
         apply_all_roles($runner,'Net::Stomp::MooseHelpers::TraceStomp');
         $runner->trace_basedir($trace_dir);
         $runner->trace(1);
+        $runner->trace_types([])
+            if $runner->can('trace_types');
         $runner->run(BrokerTestApp->get_app());
 
         sleep 2;
