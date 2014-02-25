@@ -69,6 +69,7 @@ sub _build_child {
                                       # values across the fork
     my $pid = fork();
     if ($pid == 0) {
+        $SIG{TERM}=sub{exit 0};
         my $runner = Plack::Handler::Stomp->new({
             servers => [ { hostname => 'localhost', port => 61613 } ],
             subscriptions => [
@@ -88,6 +89,8 @@ sub _build_child {
         apply_all_roles($runner,'Net::Stomp::MooseHelpers::TraceStomp');
         $runner->trace_basedir($trace_dir);
         $runner->trace(1);
+        $runner->trace_types([])
+            if $runner->can('trace_types');
         $runner->run(BrokerTestApp->get_app());
 
         sleep 2;
@@ -102,6 +105,7 @@ sub _build_child {
 
 sub DEMOLISH {
     my ($self) = @_;
+
     return unless $self->has_child;
 
     my $child = $self->child;

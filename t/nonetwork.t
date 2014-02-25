@@ -138,8 +138,16 @@ test 'talk to the app' => sub {
         );
 
     };
+
+    $prod->send(
+        '/topic/plack-handler-stomp-test',
+        {
+            type => 'test_foo',
+        },
+        JSON::XS::encode_json({exit_now=>1}),
+    );
 };
 
-
 run_me;
+
 done_testing;

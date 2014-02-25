@@ -9,6 +9,8 @@ my $app = sub {
     my $data = JSON::XS::decode_json($body);
     my $response = {};
 
+    exit 0 if $data->{exit_now};
+
     $response->{path_info} = $env->{PATH_INFO};
 
     if ($data->{reply_to}) {

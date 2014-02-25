@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp;
 {
-  $Plack::Handler::Stomp::VERSION = '1.06_02';
+  $Plack::Handler::Stomp::VERSION = '1.08';
 }
 {
   $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
@@ -339,7 +339,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -347,7 +347,7 @@ Plack::Handler::Stomp - adapt STOMP to (almost) HTTP, via Plack
 
 =head1 VERSION
 
-version 1.06_02
+version 1.08
 
 =head1 SYNOPSIS
 

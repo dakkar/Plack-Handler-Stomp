@@ -40,7 +40,11 @@ sub _build_child {
     my $trace_dir = $self->trace_dir; # make sure we don't get two
                                       # values across the fork
     my $pid = fork();
-    if ($pid == 0) {
+    if (!defined $pid) {
+        die "Can't start server: $!";
+    }
+    elsif ($pid == 0) {
+        $SIG{TERM}=sub{exit 0};
         my $runner = Plack::Handler::Stomp::NoNetwork->new({
             subscriptions => [
                 { destination => '/queue/plack-handler-stomp-test' },

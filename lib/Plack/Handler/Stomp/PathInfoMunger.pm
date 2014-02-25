@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::PathInfoMunger;
 {
-  $Plack::Handler::Stomp::PathInfoMunger::VERSION = '1.06_02';
+  $Plack::Handler::Stomp::PathInfoMunger::VERSION = '1.08';
 }
 {
   $Plack::Handler::Stomp::PathInfoMunger::DIST = 'Plack-Handler-Stomp';
@@ -50,7 +50,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -58,7 +58,7 @@ Plack::Handler::Stomp::PathInfoMunger - printf-style interpolations for PATH_INF
 
 =head1 VERSION
 
-version 1.06_02
+version 1.08
 
 =head1 FUNCTIONS
 

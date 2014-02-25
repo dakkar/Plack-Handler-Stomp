@@ -1,6 +1,6 @@
 package Plack::Handler::Stomp::NoNetwork;
 {
-  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.06_02';
+  $Plack::Handler::Stomp::NoNetwork::VERSION = '1.08';
 }
 {
   $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
@@ -137,7 +137,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -145,7 +145,7 @@ Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a 
 
 =head1 VERSION
 
-version 1.06_02
+version 1.08
 
 =head1 SYNOPSIS
 

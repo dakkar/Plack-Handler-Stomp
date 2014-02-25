@@ -1,6 +1,6 @@
 package Test::Plack::Handler::Stomp::FakeStomp;
 {
-  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.06_02';
+  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.08';
 }
 {
   $Test::Plack::Handler::Stomp::FakeStomp::DIST = 'Plack-Handler-Stomp';
@@ -90,7 +90,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -98,7 +98,7 @@ Test::Plack::Handler::Stomp::FakeStomp - subclass of L<Net::Stomp>, half-mocked 
 
 =head1 VERSION
 
-version 1.06_02
+version 1.08
 
 =head1 DESCRIPTION
 
