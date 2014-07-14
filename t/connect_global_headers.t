@@ -33,11 +33,11 @@ test 'connecting with supplied params' => sub {
 
     is($t->constructor_calls_count,1,'built once');
     my $call = $t->constructor_calls->[0];
-    is_deeply($call,{hosts=>[$new_params]},'custom host used');
+    cmp_deeply($call,{hosts=>[$new_params],logger=>ignore()},'custom host used');
 
     is($t->connection_calls_count,1,'connected once');
     $call = $t->connection_calls->[0];
-    is_deeply($call,$conn_head,'custom connect headers used');
+    cmp_deeply($call,$conn_head,'custom connect headers used');
 };
 
 run_me;

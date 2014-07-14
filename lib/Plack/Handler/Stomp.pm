@@ -31,6 +31,16 @@ sub _build_logger {
     Plack::Handler::Stomp::StupidLogger->new();
 }
 
+sub _build_connection {
+    my ($self) = @_;
+
+    return $self->connection_builder->({
+        %{$self->extra_connection_builder_args},
+        logger => $self->logger,
+        hosts => $self->servers,
+    });
+}
+
 
 has destination_path_map => (
     is => 'ro',
@@ -390,7 +400,9 @@ documentation to see how to configure servers and subscriptions.
 A logger object used by thes handler. Not to be confused by the logger
 used by the application (either internally, or via a Middleware). Can
 be any object that can C<debug>, C<info>, C<warn>, C<error>. Defaults
-to an instance of L<Plack::Handler::Stomp::StupidLogger>.
+to an instance of L<Plack::Handler::Stomp::StupidLogger>. This logger
+is passed on to the L<Net::Stomp> object held in C<connection> (see
+L<Net::Stomp::MooseHelpers::CanConnect>).
 
 =head2 C<destination_path_map>
 
