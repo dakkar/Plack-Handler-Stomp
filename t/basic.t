@@ -26,12 +26,13 @@ test 'connecting with defaults' => sub {
 
     is($t->constructor_calls_count,1,'built once');
     my $call = $t->constructor_calls->[0];
-    is_deeply($call,
+    cmp_deeply($call,
               {
                   hosts => [{
                       hostname => 'localhost',
                       port => 61613,
                   }],
+                  logger => ignore(),
               },
               'default parameters');
 

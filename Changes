@@ -1,5 +1,6 @@
 {{$NEXT}}
  - require Net::Stomp::MooseHelpers 2.6 for newer failover handling
+ - pass the logger to the Net::Stomp object
 
 1.08      2014-02-25 16:52:22 Europe/London
  - fix real_broker test for compatibility with MooseHelpers 2.2
