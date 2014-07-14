@@ -19,6 +19,10 @@ sub _get_connection {
     return 1;
 }
 
+sub current_host {
+    return 0;
+}
+
 =method C<new>
 
   my $stomp = Test::Plack::Handler::Stomp::FakeStomp->new({

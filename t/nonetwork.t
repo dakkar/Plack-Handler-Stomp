@@ -7,6 +7,7 @@ use JSON::XS;
 use Net::Stomp::MooseHelpers::ReadTrace;
 use File::ChangeNotify;
 with 'RunTestAppNoNet';
+use Data::Printer;
 
 test 'talk to the app' => sub {
     my ($self) = @_;
@@ -102,6 +103,7 @@ test 'talk to the app' => sub {
     subtest 'subscriptions' => sub {
         my $watcher = File::ChangeNotify->instantiate_watcher(
             directories => [ $trace_dir ],
+            filter => qr{^\d+\.\d+-send-},
         );
 
         $prod->send(
@@ -135,7 +137,7 @@ test 'talk to the app' => sub {
                         path => re(qr{$sent_file_re})),
             ],
             'one message sent by us, none by the consumer'
-        );
+        ) or note p @events;
 
     };
 

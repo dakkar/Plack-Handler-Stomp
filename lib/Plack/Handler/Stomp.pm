@@ -10,8 +10,8 @@ use namespace::autoclean;
 use Try::Tiny;
 use Plack::Util;
 
-with 'Net::Stomp::MooseHelpers::CanConnect' => { -version => '1.1' };
-with 'Net::Stomp::MooseHelpers::CanSubscribe' => { -version => '1.1' };
+with 'Net::Stomp::MooseHelpers::CanConnect' => { -version => '2.6' };
+with 'Net::Stomp::MooseHelpers::CanSubscribe' => { -version => '2.6' };
 with 'Net::Stomp::MooseHelpers::ReconnectOnFailure';
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
