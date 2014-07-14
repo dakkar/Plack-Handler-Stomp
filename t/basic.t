@@ -28,8 +28,10 @@ test 'connecting with defaults' => sub {
     my $call = $t->constructor_calls->[0];
     is_deeply($call,
               {
-                  hostname => 'localhost',
-                  port => 61613,
+                  hosts => [{
+                      hostname => 'localhost',
+                      port => 61613,
+                  }],
               },
               'default parameters');
 

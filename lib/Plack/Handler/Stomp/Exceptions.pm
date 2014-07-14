@@ -1,7 +1,5 @@
 package Plack::Handler::Stomp::Exceptions;
-{
-  $Plack::Handler::Stomp::Exceptions::VERSION = '1.08';
-}
+$Plack::Handler::Stomp::Exceptions::VERSION = '1.09';
 {
   $Plack::Handler::Stomp::Exceptions::DIST = 'Plack-Handler-Stomp';
 }
@@ -12,9 +10,7 @@ use Net::Stomp::MooseHelpers::Exceptions;
 
 {
 package Plack::Handler::Stomp::Exceptions::UnknownFrame;
-{
-  $Plack::Handler::Stomp::Exceptions::UnknownFrame::VERSION = '1.08';
-}
+$Plack::Handler::Stomp::Exceptions::UnknownFrame::VERSION = '1.09';
 {
   $Plack::Handler::Stomp::Exceptions::UnknownFrame::DIST = 'Plack-Handler-Stomp';
 }
@@ -31,9 +27,7 @@ __PACKAGE__->meta->make_immutable;
 
 {
 package Plack::Handler::Stomp::Exceptions::AppError;
-{
-  $Plack::Handler::Stomp::Exceptions::AppError::VERSION = '1.08';
-}
+$Plack::Handler::Stomp::Exceptions::AppError::VERSION = '1.09';
 {
   $Plack::Handler::Stomp::Exceptions::AppError::DIST = 'Plack-Handler-Stomp';
 }
@@ -50,9 +44,7 @@ __PACKAGE__->meta->make_immutable;
 
 {
 package Plack::Handler::Stomp::Exceptions::OneShot;
-{
-  $Plack::Handler::Stomp::Exceptions::OneShot::VERSION = '1.08';
-}
+$Plack::Handler::Stomp::Exceptions::OneShot::VERSION = '1.09';
 {
   $Plack::Handler::Stomp::Exceptions::OneShot::DIST = 'Plack-Handler-Stomp';
 }
@@ -75,7 +67,7 @@ Plack::Handler::Stomp::Exceptions - exception classes for Plack::Handler::Stomp
 
 =head1 VERSION
 
-version 1.08
+version 1.09
 
 =head1 DESCRIPTION
 

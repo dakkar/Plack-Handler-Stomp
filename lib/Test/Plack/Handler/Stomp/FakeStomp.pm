@@ -1,7 +1,5 @@
 package Test::Plack::Handler::Stomp::FakeStomp;
-{
-  $Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.08';
-}
+$Test::Plack::Handler::Stomp::FakeStomp::VERSION = '1.09';
 {
   $Test::Plack::Handler::Stomp::FakeStomp::DIST = 'Plack-Handler-Stomp';
 }
@@ -15,6 +13,10 @@ use Net::Stomp::Frame;
 
 sub _get_connection {
     return 1;
+}
+
+sub current_host {
+    return 0;
 }
 
 
@@ -98,7 +100,7 @@ Test::Plack::Handler::Stomp::FakeStomp - subclass of L<Net::Stomp>, half-mocked 
 
 =head1 VERSION
 
-version 1.08
+version 1.09
 
 =head1 DESCRIPTION
 

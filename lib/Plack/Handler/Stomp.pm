@@ -1,7 +1,5 @@
 package Plack::Handler::Stomp;
-{
-  $Plack::Handler::Stomp::VERSION = '1.08';
-}
+$Plack::Handler::Stomp::VERSION = '1.09';
 {
   $Plack::Handler::Stomp::DIST = 'Plack-Handler-Stomp';
 }
@@ -16,8 +14,8 @@ use namespace::autoclean;
 use Try::Tiny;
 use Plack::Util;
 
-with 'Net::Stomp::MooseHelpers::CanConnect' => { -version => '1.1' };
-with 'Net::Stomp::MooseHelpers::CanSubscribe' => { -version => '1.1' };
+with 'Net::Stomp::MooseHelpers::CanConnect' => { -version => '2.6' };
+with 'Net::Stomp::MooseHelpers::CanSubscribe' => { -version => '2.6' };
 with 'Net::Stomp::MooseHelpers::ReconnectOnFailure';
 
 # ABSTRACT: adapt STOMP to (almost) HTTP, via Plack
@@ -347,7 +345,7 @@ Plack::Handler::Stomp - adapt STOMP to (almost) HTTP, via Plack
 
 =head1 VERSION
 
-version 1.08
+version 1.09
 
 =head1 SYNOPSIS
 

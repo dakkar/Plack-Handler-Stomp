@@ -1,3 +1,6 @@
+1.09      2014-07-14 16:57:28+01:00 Europe/London
+ - require Net::Stomp::MooseHelpers 2.6 for newer failover handling
+
 1.08      2014-02-25 16:52:22 Europe/London
  - fix real_broker test for compatibility with MooseHelpers 2.2
 
