@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+1.09      2014-07-14 17:18:35+01:00 Europe/London
  - require Net::Stomp::MooseHelpers 2.6 for newer failover handling
  - pass the logger to the Net::Stomp object
 
