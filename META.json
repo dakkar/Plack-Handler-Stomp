@@ -51,6 +51,7 @@
             "Net::Stomp::MooseHelpers::ReconnectOnFailure" : "0",
             "Net::Stomp::MooseHelpers::TraceOnly" : "0",
             "Net::Stomp::MooseHelpers::Types" : "0",
+            "Net::Stomp::StupidLogger" : "0",
             "Path::Class" : "0",
             "Plack::Util" : "0",
             "Sub::Exporter" : "0",
@@ -90,6 +91,6 @@
          "web" : "https://github.com/dakkar/plack-handler-stomp"
       }
    },
-   "version" : "1.09"
+   "version" : "1.10"
 }
 

@@ -19,7 +19,6 @@ my @files = (
     'lib/Plack/Handler/Stomp/Exceptions.pm',
     'lib/Plack/Handler/Stomp/NoNetwork.pm',
     'lib/Plack/Handler/Stomp/PathInfoMunger.pm',
-    'lib/Plack/Handler/Stomp/StupidLogger.pm',
     'lib/Plack/Handler/Stomp/Types.pm',
     'lib/Test/Plack/Handler/Stomp.pm',
     'lib/Test/Plack/Handler/Stomp/FakeStomp.pm'

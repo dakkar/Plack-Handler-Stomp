@@ -36,6 +36,7 @@ my %WriteMakefileArgs = (
     "Net::Stomp::MooseHelpers::ReconnectOnFailure" => 0,
     "Net::Stomp::MooseHelpers::TraceOnly" => 0,
     "Net::Stomp::MooseHelpers::Types" => 0,
+    "Net::Stomp::StupidLogger" => 0,
     "Path::Class" => 0,
     "Plack::Util" => 0,
     "Sub::Exporter" => 0,
@@ -63,7 +64,7 @@ my %WriteMakefileArgs = (
     "Test::Routine::Util" => 0,
     "lib" => 0
   },
-  "VERSION" => "1.09",
+  "VERSION" => "1.10",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -94,6 +95,7 @@ my %FallbackPrereqs = (
   "Net::Stomp::MooseHelpers::TraceOnly" => 0,
   "Net::Stomp::MooseHelpers::Types" => 0,
   "Net::Stomp::Producer" => 0,
+  "Net::Stomp::StupidLogger" => 0,
   "Path::Class" => 0,
   "Plack::Util" => 0,
   "Sub::Exporter" => 0,
