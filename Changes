@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+1.10      2014-07-16 12:35:35+01:00 Europe/London
  - drop our own StupidLogger, use Net::Stomp::StupidLogger
 
 1.09      2014-07-14 17:18:35+01:00 Europe/London
