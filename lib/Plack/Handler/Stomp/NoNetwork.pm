@@ -1,4 +1,8 @@
 package Plack::Handler::Stomp::NoNetwork;
+$Plack::Handler::Stomp::NoNetwork::VERSION = '1.11';
+{
+  $Plack::Handler::Stomp::NoNetwork::DIST = 'Plack-Handler-Stomp';
+}
 use Moose;
 use namespace::autoclean;
 use Try::Tiny;
@@ -9,40 +13,6 @@ extends 'Plack::Handler::Stomp';
 
 # ABSTRACT: like L<Plack::Handler::Stomp>, but without a network
 
-=head1 SYNOPSIS
-
-  my $runner = Plack::Handler::Stomp::NoNetwork->new({
-    trace_basedir => '/tmp/mq',
-    subscriptions => [
-      { destination => '/queue/plack-handler-stomp-test' },
-      { destination => '/topic/plack-handler-stomp-test',
-        path_info => '/topic/ch1', },
-      { destination => '/topic/plack-handler-stomp-test',
-        path_info => '/topic/ch2', },
-    ],
-  });
-  $runner->run(MyApp->get_app());
-
-=head1 DESCRIPTION
-
-Just like L<Plack::Handler::Stomp>, but instead of using a network
-connection, we get our frames from a directory.
-
-This class uses L<File::ChangeNotify> to monitor the
-L<trace_basedir|Net::Stomp::MooseHelpers::TraceOnly/trace_basedir>,
-and L<Net::Stomp::MooseHelpers::ReadTrace> to read the frames.
-
-It also consumes L<Net::Stomp::MooseHelpers::TraceOnly> to make sure
-that every reply we try to send is actually written to disk instead of
-a broker.
-
-=head2 WARNING!
-
-This class does not implement subscription selectors. If you have
-multiple subscriptions for the same destination, a random one will be
-used.
-
-=cut
 
 with 'Net::Stomp::MooseHelpers::TraceOnly';
 
@@ -76,12 +46,6 @@ after subscribe_single => sub {
     return;
 };
 
-=attr C<file_watcher>
-
-Instance of L<File::ChangeNotify::Watcher>, set up to monitor
-C<trace_basedir> for sent messages.
-
-=cut
 
 has file_watcher => (
     is => 'ro',
@@ -105,12 +69,6 @@ sub _build_file_watcher {
     );
 }
 
-=attr C<frame_reader>
-
-Instance of L<Net::Stomp::MooseHelpers::ReadTrace> used to parse
-frames from disk.
-
-=cut
 
 has frame_reader => (
     is => 'ro',
@@ -124,18 +82,6 @@ sub _build_frame_reader {
     });
 }
 
-=method C<frame_loop>
-
-This method ovverrides the corresponding one from
-L<Plack::Handler::Stomp>.
-
-Loop forever, collecting C<create> events from the
-L</file_watcher>. Each new file is parsed by the L</frame_reader>,
-then passed to
-L<handle_stomp_frame|Plack::Handler::Stomp/handle_stomp_frame> as
-usual.
-
-=cut
 
 sub frame_loop {
     my ($self,$app) = @_;
@@ -184,3 +130,88 @@ sub frame_loop {
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+Plack::Handler::Stomp::NoNetwork - like L<Plack::Handler::Stomp>, but without a network
+
+=head1 VERSION
+
+version 1.11
+
+=head1 SYNOPSIS
+
+  my $runner = Plack::Handler::Stomp::NoNetwork->new({
+    trace_basedir => '/tmp/mq',
+    subscriptions => [
+      { destination => '/queue/plack-handler-stomp-test' },
+      { destination => '/topic/plack-handler-stomp-test',
+        path_info => '/topic/ch1', },
+      { destination => '/topic/plack-handler-stomp-test',
+        path_info => '/topic/ch2', },
+    ],
+  });
+  $runner->run(MyApp->get_app());
+
+=head1 DESCRIPTION
+
+Just like L<Plack::Handler::Stomp>, but instead of using a network
+connection, we get our frames from a directory.
+
+This class uses L<File::ChangeNotify> to monitor the
+L<trace_basedir|Net::Stomp::MooseHelpers::TraceOnly/trace_basedir>,
+and L<Net::Stomp::MooseHelpers::ReadTrace> to read the frames.
+
+It also consumes L<Net::Stomp::MooseHelpers::TraceOnly> to make sure
+that every reply we try to send is actually written to disk instead of
+a broker.
+
+=head2 WARNING!
+
+This class does not implement subscription selectors. If you have
+multiple subscriptions for the same destination, a random one will be
+used.
+
+=head1 ATTRIBUTES
+
+=head2 C<file_watcher>
+
+Instance of L<File::ChangeNotify::Watcher>, set up to monitor
+C<trace_basedir> for sent messages.
+
+=head2 C<frame_reader>
+
+Instance of L<Net::Stomp::MooseHelpers::ReadTrace> used to parse
+frames from disk.
+
+=head1 METHODS
+
+=head2 C<frame_loop>
+
+This method ovverrides the corresponding one from
+L<Plack::Handler::Stomp>.
+
+Loop forever, collecting C<create> events from the
+L</file_watcher>. Each new file is parsed by the L</frame_reader>,
+then passed to
+L<handle_stomp_frame|Plack::Handler::Stomp/handle_stomp_frame> as
+usual.
+
+=head1 AUTHOR
+
+Gianni Ceccarelli <gianni.ceccarelli@net-a-porter.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Net-a-porter.com.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
