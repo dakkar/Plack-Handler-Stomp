@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+1.12      2014-11-11 14:40:06+00:00 Europe/London
  - use CONTENT_LENGTH instead of HTTP_CONTENT_LENGTH, more closely
    following the PSGI spec
 
