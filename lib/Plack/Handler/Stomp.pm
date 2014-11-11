@@ -459,8 +459,8 @@ Builds a PSGI environment from the message, like:
 
   # http
   HTTP_USER_AGENT => 'Net::Stomp',
-  HTTP_CONTENT_LENGTH => length($body),
-  HTTP_CONTENT_TYPE => $content-type,
+  CONTENT_LENGTH => length($body),
+  CONTENT_TYPE => $content-type,
 
   # psgi
   'psgi.version' => [1,0],
@@ -525,8 +525,8 @@ sub build_psgi_env {
 
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
-        HTTP_CONTENT_LENGTH => length($frame->body),
-        HTTP_CONTENT_TYPE => $frame->headers->{'content-type'},
+        CONTENT_LENGTH => length($frame->body),
+        CONTENT_TYPE => $frame->headers->{'content-type'},
 
         # psgi
         'psgi.version' => [1,0],

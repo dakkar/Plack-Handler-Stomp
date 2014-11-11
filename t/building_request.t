@@ -43,8 +43,8 @@ test 'a simple request' => sub {
 
         # http
         HTTP_USER_AGENT => 'Net::Stomp',
-        HTTP_CONTENT_LENGTH => 3,
-        HTTP_CONTENT_TYPE => 'json',
+        CONTENT_LENGTH => 3,
+        CONTENT_TYPE => 'json',
 
         # psgi
         'psgi.version' => [1,0],
