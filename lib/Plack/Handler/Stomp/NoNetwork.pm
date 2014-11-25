@@ -126,7 +126,7 @@ sub _build_frame_reader {
 
 =method C<frame_loop>
 
-This method ovverrides the corresponding one from
+This method overrides the corresponding one from
 L<Plack::Handler::Stomp>.
 
 Loop forever, collecting C<create> events from the
