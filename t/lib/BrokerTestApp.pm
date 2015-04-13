@@ -7,7 +7,7 @@ my $app = sub {
     my $body;
     (delete $env->{'psgi.input'})->read($body,1000000);
     my $data = JSON::XS::decode_json($body);
-    my $response = {};
+    my $response = { payload => ($data->{payload} || {}) };
 
     exit 0 if $data->{exit_now};
 

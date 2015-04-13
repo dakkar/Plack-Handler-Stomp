@@ -1,6 +1,7 @@
 package Plack::Handler::Stomp;
 use Moose;
-use MooseX::Types::Moose qw(Bool);
+use MooseX::Types::Moose qw(Bool HashRef);
+use MooseX::Types::Common::Numeric qw(PositiveNum);
 use Plack::Handler::Stomp::Types qw(Logger PathMap);
 use Net::Stomp::MooseHelpers::Types qw(NetStompish);
 use Plack::Handler::Stomp::PathInfoMunger 'munge_path_info';
@@ -160,6 +161,9 @@ sub run {
             $exception = $_;
         };
         if ($exception) {
+            # if we 'return', we'll exit from ->reconnect_on_failure,
+            # so the last few lines of this 'run' method will be
+            # executed
             if (!blessed $exception) {
                 $exception = "unhandled exception $exception";
                 return;
@@ -174,6 +178,8 @@ sub run {
                 $exception=undef;
                 return;
             }
+            # ok, something went wrong with the connection, let's
+            # 'die', ->reconnect_on_failure will reconnect
             die $exception;
         }
     });
@@ -186,6 +192,12 @@ sub run {
 Loop forever receiving frames from the STOMP connection. Call
 L</handle_stomp_frame> for each frame.
 
+If L</receipt_for_ack> is true, and we are waiting for any receipt,
+set a timeout (of L</receipt_timeout>) on each call to
+L<Net::Stomp/receive_frame>: if we don't get anything before timing
+out, the connection is dead, so we throw an exception and depend on
+L</run> to re-connect.
+
 If L</one_shot> is set, this function exits after having consumed
 exactly 1 frame.
 
@@ -195,10 +207,14 @@ sub frame_loop {
     my ($self,$app) = @_;
 
     while (1) {
-        my $frame = $self->connection->receive_frame();
+        my $frame = $self->connection->receive_frame(
+            $self->receipts_to_wait_for
+                ? { timeout => $self->receipt_timeout }
+                : ()
+        );
         if(!$frame || !ref($frame)) {
             Net::Stomp::MooseHelpers::Exceptions::Stomp->throw({
-                stomp_error => 'empty frame received',
+                stomp_error => 'empty frame, connection broken?',
             });
         }
         $self->handle_stomp_frame($app, $frame);
@@ -248,13 +264,67 @@ sub handle_stomp_error {
     $self->logger->warn($error);
 }
 
+=attr C<receipt_for_ack>
+
+If true, request a receipt from the broker for each C<ACK> we
+send. This ensures that a broken connection is recognised very soon,
+since if the receipt does not arrive in a few seconds (see
+L</receipt_timeout>), we can confindently say that something went
+wrong. Defaults to false.
+
+=cut
+
+has receipt_for_ack => (
+    is => 'ro',
+    isa => Bool,
+    default => 0,
+);
+
+=attr C<receipt_timeout>
+
+Floating point number, greater than 0. How long to wait (in seconds)
+for a receipt (or, in fact, any other frame from the broker) before
+considering the connection lost, if we are actually waiting for a
+receipt.
+
+L</frame_loop> will always wait indefinitely if no receipt is
+expected: maybe we only get one message a month!
+
+Defaults to 10 seconds.
+
+=cut
+
+has receipt_timeout => (
+    is => 'ro',
+    isa => PositiveNum,
+    default => 10,
+);
+
+has _waiting_receipts => (
+    is => 'ro',
+    init_arg => undef,
+    isa => HashRef,
+    default => sub { +{} },
+    traits => ['Hash'],
+    handles => {
+        check_and_clear_waiting_receipt => 'delete',
+        new_receipt_to_wait_for => 'set',
+        receipts_to_wait_for => 'count',
+    },
+);
+
+around new_receipt_to_wait_for => sub {
+    my ($orig,$self,$receipt) = @_;
+    $self->$orig($receipt,1);
+};
+
 =method C<handle_stomp_message>
 
 Calls L</build_psgi_env> to convert the STOMP message into a PSGI
 environment.
 
 The environment is then passed to L</process_the_message>, and the
-frame is acknowledged.
+frame is acknowledged via L</ack_message>.
 
 =cut
 
@@ -265,12 +335,31 @@ sub handle_stomp_message {
     try {
         $self->process_the_message($app,$env);
 
-        $self->connection->ack({ frame => $frame });
+        $self->ack_message($frame);
     } catch {
         Plack::Handler::Stomp::Exceptions::AppError->throw({
             app_error => $_
         });
     };
+}
+
+=method C<ack_message>
+
+Sends a C<ACK> frame to the broker. If L</receipt_for_ack> is true,
+the frame will request a receipt.
+
+=cut
+
+sub ack_message {
+    my ($self,$frame) = @_;
+    my %args = ( frame => $frame );
+
+    if ($self->receipt_for_ack) {
+        $args{receipt} = $frame->headers->{'message-id'} . '-ack';
+        $self->new_receipt_to_wait_for($args{receipt});
+    }
+
+    $self->connection->ack(\%args);
 }
 
 =method C<process_the_message>
@@ -335,8 +424,15 @@ receipts.
 sub handle_stomp_receipt {
     my ($self, $app, $frame) = @_;
 
-    $self->logger->debug('ignored RECEIPT frame for '
-                             .$frame->headers->{'receipt-id'});
+    my $receipt = $frame->headers->{'receipt-id'};
+    if ($self->check_and_clear_waiting_receipt($receipt)) {
+        $self->logger->debug("got RECEIPT frame for $receipt");
+    }
+    else {
+        $self->logger->debug("ignored RECEIPT frame for $receipt");
+    }
+
+    return;
 }
 
 =method C<maybe_send_reply>

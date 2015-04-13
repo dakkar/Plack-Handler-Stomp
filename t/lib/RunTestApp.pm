@@ -8,6 +8,7 @@ use Test::More;
 use Moose::Util 'apply_all_roles';
 use File::Temp 'tempdir';
 use Path::Class;
+use JSON::XS;
 
 my $mq;
 
@@ -63,6 +64,12 @@ sub _build_trace_dir {
     return tempdir(CLEANUP => ( $ENV{TEST_VERBOSE} ? 0 : 1 ));
 }
 
+has receipt_for_ack => (
+    is => 'ro',
+    lazy_build => 1,
+);
+sub _build_receipt_for_ack { 0 }
+
 sub _build_child {
     my ($self) = @_;
 
@@ -86,6 +93,7 @@ sub _build_child {
                   },
                   path_info => '/topic/ch2', },
             ],
+            receipt_for_ack => $self->receipt_for_ack,
         });
         apply_all_roles($runner,'Net::Stomp::MooseHelpers::TraceStomp');
         $runner->trace_basedir($trace_dir);
@@ -104,16 +112,20 @@ sub _build_child {
     }
 }
 
-sub DEMOLISH {}
-after DEMOLISH => sub {
+sub kill_application {
     my ($self) = @_;
-
     return unless $self->has_child;
 
     my $child = $self->child;
     kill 'TERM',$child;
     diag "waitpid for child\n";
     waitpid($child,0);
+    $self->clear_child;
+}
+
+sub DEMOLISH {}
+after DEMOLISH => sub {
+    shift->kill_application;
 };
 
 has reply_to => ( is => 'rw' );
@@ -136,16 +148,21 @@ before 'run_test' => sub {
        'subscribe to temp queue');
 
     $self->reply_to($reply_to);
+    $self->child; # start the child process
+    return;
 };
 
 after 'run_test' => sub {
     my ($self) = @_;
 
+    $self->kill_application;
     my $conn = $self->server_conn;
 
     $conn->disconnect;
     ok(!$conn->socket->connected, 'disconnected');
     $self->reply_to(undef);
+    $self->clear_server_conn;
+    return;
 };
 
 1;
