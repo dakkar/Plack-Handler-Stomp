@@ -1,5 +1,3 @@
-{{$NEXT}}
-
 1.13      2015-07-23 17:38:50+01:00 Europe/London
  - if the incoming frame does not declare a content-type, assume
    application/octet-stream; we could just not include the
