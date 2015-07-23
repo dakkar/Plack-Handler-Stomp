@@ -1,4 +1,8 @@
 {{$NEXT}}
+ - if the incoming frame does not declare a content-type, assume
+   application/octet-stream; we could just not include the
+   CONTENT_TYPE PSGI key, but a few consumers (Catalyst, HTTP::Body)
+   seem to assume it exists
 
 1.12      2014-11-11 14:40:06+00:00 Europe/London
  - use CONTENT_LENGTH instead of HTTP_CONTENT_LENGTH, more closely
