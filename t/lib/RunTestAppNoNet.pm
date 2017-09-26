@@ -68,13 +68,14 @@ sub _build_child {
     }
 }
 
-sub DEMOLISH {
+sub DEMOLISH {}
+after DEMOLISH => sub {
     my ($self) = @_;
     return unless $self->has_child;
     my $child = $self->child;
     kill 'TERM',$child;
     diag "waitpid for child";
     waitpid($child,0);
-}
+};
 
 1;
