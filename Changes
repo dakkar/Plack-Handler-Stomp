@@ -1,4 +1,6 @@
 {{$NEXT}}
+ - fix testing behaviour under Test::Routine::Common 0.25 (thanks
+   Ilmari!)
 
 1.13      2015-07-23 17:38:50+01:00 Europe/London
  - if the incoming frame does not declare a content-type, assume

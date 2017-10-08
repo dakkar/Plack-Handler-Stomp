@@ -103,7 +103,8 @@ sub _build_child {
     }
 }
 
-sub DEMOLISH {
+sub DEMOLISH {}
+after DEMOLISH => sub {
     my ($self) = @_;
 
     return unless $self->has_child;
@@ -112,7 +113,7 @@ sub DEMOLISH {
     kill 'TERM',$child;
     diag "waitpid for child\n";
     waitpid($child,0);
-}
+};
 
 has reply_to => ( is => 'rw' );
 
