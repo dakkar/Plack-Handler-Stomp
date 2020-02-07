@@ -401,6 +401,8 @@ sub setup_handler {
     })
 }
 
+=method C<trace>
+
 =method C<debug>
 
 =method C<info>
@@ -415,6 +417,10 @@ L</add_log_message>.
 
 =cut
 
+sub trace {
+    my ($self,@msg) = @_;
+    $self->add_log_message(['trace',@msg]);
+}
 sub debug {
     my ($self,@msg) = @_;
     $self->add_log_message(['debug',@msg]);

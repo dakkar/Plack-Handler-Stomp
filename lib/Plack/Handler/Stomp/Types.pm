@@ -16,11 +16,11 @@ use namespace::autoclean;
 
 =head2 C<Logger>
 
-Any object that can C<debug>, C<info>, C<warn>, C<error>.
+Any object that can C<trace>, C<debug>, C<info>, C<warn>, C<error>.
 
 =cut
 
-duck_type Logger, [qw(debug info
+duck_type Logger, [qw(trace debug info
                       warn error)];
 
 =head2 C<PathMapKey>

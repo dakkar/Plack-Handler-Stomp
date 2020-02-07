@@ -56,10 +56,10 @@ documentation to see how to configure servers and subscriptions.
 
 A logger object used by thes handler. Not to be confused by the logger
 used by the application (either internally, or via a Middleware). Can
-be any object that can C<debug>, C<info>, C<warn>, C<error>. Defaults
-to an instance of L<Net::Stomp::StupidLogger>. This logger is passed
-on to the L<Net::Stomp> object held in C<connection> (see
-L<Net::Stomp::MooseHelpers::CanConnect>).
+be any object that can C<trace>, C<debug>, C<info>, C<warn>,
+C<error>. Defaults to an instance of L<Log::Any::Proxy>. This
+logger is passed on to the L<Net::Stomp> object held in C<connection>
+(see L<Net::Stomp::MooseHelpers::CanConnect>).
 
 =cut
 
@@ -69,8 +69,8 @@ has logger => (
     lazy_build => 1,
 );
 sub _build_logger {
-    require Net::Stomp::StupidLogger;
-    Net::Stomp::StupidLogger->new();
+    require Log::Any;
+    Log::Any->get_logger();
 }
 
 sub _build_connection {
