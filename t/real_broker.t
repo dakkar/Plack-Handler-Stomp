@@ -1,4 +1,5 @@
 #!perl
+package Test::Plack::Handler::Stomp::RealBroker;
 use lib 't/lib';
 use Test::Routine;
 use Test::Routine::Util;
@@ -7,80 +8,99 @@ use JSON::XS;
 use Net::Stomp::MooseHelpers::ReadTrace;
 with 'RunTestApp';
 
-test 'talk to the app' => sub {
-    my ($self) = @_;
+sub send_message {
+    my ($self,$case) = @_;
 
-    my $child = $self->child;
-    my $conn = $self->server_conn;
-    my $reply_to = $self->reply_to;
+    my $message = {
+        payload => $case->{payload},
+        reply_to => $self->reply_to,
+        type => 'testaction',
+    };
 
-    my @cases = (
+    $self->server_conn->send( {
+        destination => $case->{destination},
+        body => JSON::XS::encode_json($message),
+        JMSType => $case->{JMSType},
+        custom_header => $case->{custom_header},
+    } );
+}
+
+sub check_reply {
+    my ($self,$case) = @_;
+
+    my $reply_frame = $self->server_conn->receive_frame();
+    cmp_ok($reply_frame->command,'eq','MESSAGE','received the response');
+
+    my $response = JSON::XS::decode_json($reply_frame->body);
+    cmp_ok(
+        $response->{path_info},'eq',$case->{path_info},
+        'correct response path',
+    );
+    cmp_deeply(
+        $response->{payload},
+        $case->{payload},
+        'correct response payload',
+    );
+}
+
+has cases => (
+    is => 'ro',
+    isa => 'ArrayRef',
+    lazy_build => 1,
+);
+
+sub _build_cases {
+    return [
         {
             destination => '/queue/plack-handler-stomp-test',
+            payload => { foo => 1, bar => 2 },
             JMSType => 'anything',
             custom_header => '3',
             path_info => '/queue/plack-handler-stomp-test',
         },
         {
             destination => '/topic/plack-handler-stomp-test',
+            payload => { foo => 2, bar => 3 },
             JMSType => 'test_foo',
             custom_header => '3',
             path_info => '/topic/ch1',
         },
         {
             destination => '/topic/plack-handler-stomp-test',
+            payload => { foo => 3, bar => 4 },
             JMSType => 'anything',
             custom_header => '1',
             path_info => '/topic/ch1',
         },
         {
             destination => '/topic/plack-handler-stomp-test',
+            payload => { foo => 4, bar => 5 },
             JMSType => 'test_bar',
             custom_header => '3',
             path_info => '/topic/ch2',
         },
         {
             destination => '/topic/plack-handler-stomp-test',
+            payload => { foo => 5, bar => 6 },
             JMSType => 'anything',
             custom_header => '2',
             path_info => '/topic/ch2',
         },
-    );
+    ];
+}
 
-    subtest 'send & reply' => sub {
-        for my $case (@cases) {
-            my $message = {
-                payload => { foo => 1, bar => 2 },
-                reply_to => $reply_to,
-                type => 'testaction',
-            };
+sub case_comparers {
+    my ($self) = @_;
 
-            $conn->send( {
-                destination => $case->{destination},
-                body => JSON::XS::encode_json($message),
-                JMSType => $case->{JMSType},
-                custom_header => $case->{custom_header},
-            } );
-
-            my $reply_frame = $conn->receive_frame();
-            ok($reply_frame, 'got a reply');
-
-            my $response = JSON::XS::decode_json($reply_frame->body);
-            ok($response, 'response ok');
-            ok($response->{path_info} eq $case->{path_info}, 'worked');
-        }
-    };
-
-    subtest 'tracing' => sub {
-        my $reader = Net::Stomp::MooseHelpers::ReadTrace->new({
-            trace_basedir => $self->trace_dir,
-        });
-        my @frames = $reader->sorted_frames();
-
-        my @case_comparers = map {
+    return (
+        methods(command=>'CONNECT'),
+        methods(command=>'CONNECTED'),
+        (methods(command=>'SUBSCRIBE')) x 3,
+        map {
             my %h=%$_;
             $h{type}=delete $h{JMSType};
             my $pi=delete $h{path_info};
+            delete $h{payload};
 
             (
                 methods(command=>'MESSAGE',
@@ -94,32 +114,45 @@ test 'talk to the app' => sub {
                     ),
                 methods(command=>'ACK'),
             )
-        } @cases;
+        } @{$self->cases},
+    );
+}
 
-        cmp_deeply(\@frames,
-                   [
-                       methods(command=>'CONNECT'),
-                       methods(command=>'CONNECTED'),
-                       (methods(command=>'SUBSCRIBE')) x 3,
-                       @case_comparers,
-                   ],
-                   'tracing works'
-               );
+sub check_trace {
+    my ($self,$frames) = @_;
+
+    my @case_comparers = $self->case_comparers;
+
+    cmp_deeply(
+        $frames,
+        \@case_comparers,
+        'tracing works'
+    ) or explain $frames;
+}
+
+test 'talk to the app' => sub {
+    my ($self) = @_;
+
+    subtest 'send & reply' => sub {
+        for my $case (@{$self->cases}) {
+            $self->send_message($case);
+            $self->check_reply($case);
+        }
     };
+    sleep(1); # let's wait a bit in case the app needs to read some
+              # more frames, we need this to make
+              # real_broker_receipt.t work a bit more reliably
 
-    # we send the "exit now" command on the topic, so we're sure we
-    # won't find it on the next run
-    #
-    # BrokerTestApp exits without ACK-ing the message, so it would
-    # remain on the queue, ready to stop the application the next time
-    # we try to run the test
-    $conn->send( {
-        destination => '/topic/plack-handler-stomp-test',
-        body => JSON::XS::encode_json({exit_now=>1}),
-        JMSType => 'test_foo',
-    } );
-
+    subtest 'tracing' => sub {
+        my $reader = Net::Stomp::MooseHelpers::ReadTrace->new({
+            trace_basedir => $self->trace_dir,
+        });
+        my @frames = $reader->sorted_frames();
+        $self->check_trace(\@frames);
+    };
 };
 
-run_me;
-done_testing;
+unless (caller) {
+    run_me;
+    done_testing();
+}
